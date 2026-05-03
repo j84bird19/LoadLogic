@@ -1,0 +1,595 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LoadLogic Prototype</title>  <script src="https://cdn.tailwindcss.com"></script>  <style>
+    body {
+      background: #020617;
+      color: white;
+      font-family: Arial, sans-serif;
+      overscroll-behavior: none;
+    }
+
+    body.dragging-active {
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .hidden-page {
+      display: none;
+    }
+
+    .truck-bed {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      height: 300px;
+      background: #1e293b;
+      border: 5px solid #475569;
+      border-radius: 24px;
+      margin: auto;
+      overflow: hidden;
+    }
+
+    .wheel {
+      position: absolute;
+      width: 40px;
+      height: 100px;
+      background: #020617;
+      border-radius: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .wheel.left {
+      left: 10px;
+    }
+
+    .wheel.right {
+      right: 10px;
+    }
+
+    .item-box {
+      position: absolute;
+      background: #f97316;
+      border: 2px solid white;
+      border-radius: 12px;
+      cursor: grab;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 4px;
+      user-select: none;
+      overflow: hidden;
+      line-height: 1.1;
+    }
+
+    .item-box.selected {
+      outline: 4px solid #facc15;
+    }
+  </style></head>
+<body class="p-4">  <div class="max-w-5xl mx-auto"><!-- HEADER -->
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-3xl font-black text-orange-400">LoadLogic</h1>
+    <p class="text-slate-400">Truck Bed Planning Simulator</p>
+  </div>
+</div>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+  <div class="max-w-md mx-auto bg-slate-900 rounded-3xl p-6 border border-slate-700">
+    <h2 class="text-2xl font-bold mb-4">Login</h2>
+
+    <input
+      id="username"
+      type="text"
+      placeholder="Display Name"
+      class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-4"
+      value="Bird"
+    />
+
+    <button
+      onclick="goToDashboard()"
+      class="w-full bg-orange-500 hover:bg-orange-600 p-3 rounded-xl font-bold"
+    >
+      Continue
+    </button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboardPage" class="hidden-page">
+
+  <div class="bg-slate-900 rounded-3xl p-6 border border-slate-700 mb-6">
+    <h2 class="text-3xl font-bold mb-2">Dashboard</h2>
+    <p class="text-slate-400">Open saved projects or start a new one.</p>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-slate-900 p-5 rounded-3xl border border-slate-700">
+      <h3 class="text-xl font-bold">Projects</h3>
+      <p class="text-orange-400 text-3xl">0</p>
+    </div>
+
+    <div class="bg-slate-900 p-5 rounded-3xl border border-slate-700">
+      <h3 class="text-xl font-bold">Builds</h3>
+      <p class="text-orange-400 text-3xl">0</p>
+    </div>
+
+    <div class="bg-slate-900 p-5 rounded-3xl border border-slate-700">
+      <h3 class="text-xl font-bold">Saved Items</h3>
+      <p class="text-orange-400 text-3xl">0</p>
+    </div>
+  </div>
+
+  <button
+    onclick="goToSetup()"
+    class="bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded-xl font-bold mb-6"
+  >
+    Start New Project
+  </button>
+
+  <div id="emptyProjectsMessage" class="bg-slate-900 rounded-3xl p-5 border border-slate-700 text-slate-400">
+    No saved projects yet. Start a new project to create your first LoadLogic layout.
+  </div>
+</div>
+
+<!-- SETUP PAGE -->
+<div id="setupPage" class="hidden-page">
+
+  <button
+    onclick="goToDashboard()"
+    class="mb-4 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl"
+  >
+    Back
+  </button>
+
+  <div class="bg-slate-900 rounded-3xl p-6 border border-slate-700">
+
+    <h2 class="text-3xl font-bold mb-6">New Project Setup</h2>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+
+      <input id="projectName" class="p-3 rounded-xl bg-slate-950 border border-slate-700" placeholder="Project Name" value="New Project" />
+
+      <input id="truckYear" class="p-3 rounded-xl bg-slate-950 border border-slate-700" placeholder="Truck Year" value="2020" />
+
+      <input id="truckMake" class="p-3 rounded-xl bg-slate-950 border border-slate-700" placeholder="Truck Make" value="Ford" />
+
+      <input id="truckModel" class="p-3 rounded-xl bg-slate-950 border border-slate-700" placeholder="Truck Model" value="F-150" />
+
+    </div>
+
+    <div class="mb-6">
+      <label class="block mb-2">View Mode</label>
+
+      <select id="viewMode" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700">
+        <option>2D</option>
+        <option>3D (Later)</option>
+      </select>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+
+      <button
+        onclick="selectMode('Load')"
+        id="loadModeBtn"
+        class="p-6 rounded-3xl border border-orange-500 bg-orange-500/20"
+      >
+        <h3 class="text-2xl font-bold mb-2">Load Mode</h3>
+        <p class="text-slate-400">Furniture, tools, equipment, moving items.</p>
+      </button>
+
+      <button
+        onclick="selectMode('Build')"
+        id="buildModeBtn"
+        class="p-6 rounded-3xl border border-slate-700 bg-slate-950"
+      >
+        <h3 class="text-2xl font-bold mb-2">Build Mode</h3>
+        <p class="text-slate-400">Drawer systems, racks, shelves, mounts.</p>
+      </button>
+
+    </div>
+
+    <button
+      onclick="launchWorkspace()"
+      class="w-full bg-orange-500 hover:bg-orange-600 p-4 rounded-xl font-bold text-xl"
+    >
+      Launch Workspace
+    </button>
+
+  </div>
+</div>
+
+<!-- WORKSPACE -->
+<div id="workspacePage" class="hidden-page">
+
+  <div class="flex flex-wrap gap-3 mb-4">
+
+    <button
+      onclick="goToDashboard()"
+      class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl"
+    >
+      Dashboard
+    </button>
+
+    <button
+      onclick="openItemForm()"
+      class="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-xl"
+    >
+      Add Item
+    </button>
+
+    <button
+      onclick="rotateSelectedItem()"
+      class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl"
+    >
+      Rotate Selected
+    </button>
+
+    <button
+      onclick="editSelectedItem()"
+      class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl"
+    >
+      Edit Selected
+    </button>
+
+  </div>
+
+  <div class="bg-slate-900 rounded-3xl p-4 border border-slate-700 mb-4">
+    <h2 id="workspaceTitle" class="text-2xl font-bold mb-1">Workspace</h2>
+    <p id="workspaceInfo" class="text-slate-400"></p>
+  </div>
+
+  <div class="grid gap-4">
+
+    <!-- TRUCK BED -->
+    <div class="bg-slate-900 rounded-3xl p-4 border border-slate-700">
+
+      <h3 class="text-xl font-bold mb-3">2D Truck Bed Workspace</h3>
+
+      <div id="truckBed" class="truck-bed">
+        <div class="wheel left"></div>
+        <div class="wheel right"></div>
+      </div>
+
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="bg-slate-900 rounded-3xl p-4 border border-slate-700">
+
+      <h3 class="text-xl font-bold mb-3">Side Panel</h3>
+
+      <div class="space-y-3">
+
+        <div id="itemForm" class="hidden-page bg-slate-950 p-4 rounded-2xl border border-slate-700 mb-4">
+          <h4 class="font-bold text-lg mb-3">Add Custom Item</h4>
+
+          <input id="itemName" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Item name" value="Dresser" />
+
+          <input id="itemLength" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Length in inches" value="60" />
+
+          <input id="itemWidth" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Width/depth in inches" value="24" />
+
+          <input id="itemHeight" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Height in inches" value="36" />
+
+          <input id="itemWeight" type="number" class="w-full mb-3 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Weight in lbs" value="80" />
+
+          <button onclick="createCustomItem()" class="w-full bg-orange-500 hover:bg-orange-600 p-2 rounded-xl font-bold mb-2">
+            Create Item
+          </button>
+
+          <button onclick="closeItemForm()" class="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded-xl">
+            Cancel
+          </button>
+        </div>
+
+        <button class="w-full bg-slate-700 hover:bg-slate-600 p-3 rounded-xl">
+          Saved Builds
+        </button>
+
+        <button class="w-full bg-slate-700 hover:bg-slate-600 p-3 rounded-xl">
+          Saved Items
+        </button>
+
+        <button class="w-full bg-slate-700 hover:bg-slate-600 p-3 rounded-xl">
+          Materials
+        </button>
+
+      </div>
+
+      <div id="selectedDetails" class="mt-6 bg-slate-950 p-4 rounded-2xl text-slate-300 text-sm">
+        <h4 class="font-bold text-white mb-2">Selected Item</h4>
+        <p class="text-slate-500">Tap an item to see dimensions here.</p>
+      </div>
+
+      <div class="mt-4 bg-slate-950 p-4 rounded-2xl text-slate-400 text-sm">
+        Next step: collision logic, delete, duplicate, and save layout.
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+  </div>  <script>
+
+    let currentMode = 'Load';
+    let itemCount = 0;
+    let selectedItem = null;
+
+    function hideAllPages() {
+      document.getElementById('loginPage').classList.add('hidden-page');
+      document.getElementById('dashboardPage').classList.add('hidden-page');
+      document.getElementById('setupPage').classList.add('hidden-page');
+      document.getElementById('workspacePage').classList.add('hidden-page');
+    }
+
+    function goToDashboard() {
+      hideAllPages();
+      document.getElementById('dashboardPage').classList.remove('hidden-page');
+    }
+
+    function goToSetup() {
+      hideAllPages();
+      document.getElementById('setupPage').classList.remove('hidden-page');
+    }
+
+    function openWorkspace(mode) {
+      currentMode = mode;
+      hideAllPages();
+      document.getElementById('workspacePage').classList.remove('hidden-page');
+
+      document.getElementById('workspaceTitle').innerText = mode + ' Mode Workspace';
+      document.getElementById('workspaceInfo').innerText = 'Prototype truck workspace';
+    }
+
+    function selectMode(mode) {
+      currentMode = mode;
+
+      const loadBtn = document.getElementById('loadModeBtn');
+      const buildBtn = document.getElementById('buildModeBtn');
+
+      loadBtn.className = 'p-6 rounded-3xl border border-slate-700 bg-slate-950';
+      buildBtn.className = 'p-6 rounded-3xl border border-slate-700 bg-slate-950';
+
+      if (mode === 'Load') {
+        loadBtn.className = 'p-6 rounded-3xl border border-orange-500 bg-orange-500/20';
+      } else {
+        buildBtn.className = 'p-6 rounded-3xl border border-orange-500 bg-orange-500/20';
+      }
+    }
+
+    function launchWorkspace() {
+      const projectName = document.getElementById('projectName').value;
+      const truckYear = document.getElementById('truckYear').value;
+      const truckMake = document.getElementById('truckMake').value;
+      const truckModel = document.getElementById('truckModel').value;
+
+      hideAllPages();
+      document.getElementById('workspacePage').classList.remove('hidden-page');
+
+      document.getElementById('workspaceTitle').innerText = projectName;
+      document.getElementById('workspaceInfo').innerText = `${truckYear} ${truckMake} ${truckModel} • ${currentMode} Mode`;
+    }
+
+    function openItemForm() {
+      document.getElementById('itemForm').classList.remove('hidden-page');
+    }
+
+    function closeItemForm() {
+      document.getElementById('itemForm').classList.add('hidden-page');
+    }
+
+    function createCustomItem() {
+
+      const name = document.getElementById('itemName').value || 'Custom Item';
+      const length = Number(document.getElementById('itemLength').value) || 48;
+      const width = Number(document.getElementById('itemWidth').value) || 24;
+      const height = Number(document.getElementById('itemHeight').value) || 24;
+      const weight = Number(document.getElementById('itemWeight').value) || 0;
+
+      addItemBox(name, length, width, height, weight);
+      closeItemForm();
+    }
+
+    function addItemBox(name = 'Item', length = 48, width = 24, height = 24, weight = 0) {
+
+      const truckBed = document.getElementById('truckBed');
+
+      const item = document.createElement('div');
+      item.classList.add('item-box');
+
+      // Temporary scale: 1 inch = 2 pixels.
+      // Later this will be based on the selected truck bed dimensions.
+      const scale = 1.35;
+      const visualWidth = Math.max(40, length * scale);
+      const visualHeight = Math.max(30, width * scale);
+
+      item.style.width = visualWidth + 'px';
+      item.style.height = visualHeight + 'px';
+      item.style.left = '100px';
+      item.style.top = '100px';
+
+      item.dataset.name = name;
+      item.dataset.length = length;
+      item.dataset.width = width;
+      item.dataset.height = height;
+      item.dataset.weight = weight;
+      item.dataset.rotated = 'false';
+
+      item.innerHTML = `<div>${name}</div>`;
+
+      item.addEventListener('dblclick', function () {
+        editItem(item);
+      });
+
+      item.addEventListener('click', function () {
+        selectItem(item);
+      });
+
+      truckBed.appendChild(item);
+
+      makeDraggable(item);
+    }
+
+    function selectItem(item) {
+      const allItems = document.querySelectorAll('.item-box');
+      allItems.forEach(box => box.classList.remove('selected'));
+      selectedItem = item;
+      item.classList.add('selected');
+      updateSelectedDetails();
+    }
+
+    function updateSelectedDetails() {
+      const panel = document.getElementById('selectedDetails');
+      if (!panel) return;
+
+      if (!selectedItem) {
+        panel.innerHTML = `
+          <h4 class="font-bold text-white mb-2">Selected Item</h4>
+          <p class="text-slate-500">Tap an item to see dimensions here.</p>
+        `;
+        return;
+      }
+
+      const rotated = selectedItem.dataset.rotated === 'true' ? 'Rotated 90°' : 'Normal';
+
+      panel.innerHTML = `
+        <h4 class="font-bold text-white mb-2">${selectedItem.dataset.name}</h4>
+        <p><strong>Length:</strong> ${selectedItem.dataset.length}"</p>
+        <p><strong>Width/Depth:</strong> ${selectedItem.dataset.width}"</p>
+        <p><strong>Height:</strong> ${selectedItem.dataset.height}"</p>
+        <p><strong>Weight:</strong> ${selectedItem.dataset.weight} lbs</p>
+        <p><strong>Rotation:</strong> ${rotated}</p>
+      `;
+    }
+
+    function rotateSelectedItem() {
+      if (!selectedItem) {
+        alert('Tap an item first, then rotate it.');
+        return;
+      }
+
+      const currentWidth = selectedItem.offsetWidth;
+      const currentHeight = selectedItem.offsetHeight;
+      selectedItem.style.width = currentHeight + 'px';
+      selectedItem.style.height = currentWidth + 'px';
+      selectedItem.dataset.rotated = selectedItem.dataset.rotated === 'true' ? 'false' : 'true';
+      keepItemInsideTruck(selectedItem);
+      updateSelectedDetails();
+    }
+
+    function editSelectedItem() {
+      if (!selectedItem) {
+        alert('Tap an item first, then edit it.');
+        return;
+      }
+      editItem(selectedItem);
+    }
+
+    function keepItemInsideTruck(item) {
+      const truckRect = document.getElementById('truckBed').getBoundingClientRect();
+      let x = parseFloat(item.style.left) || 0;
+      let y = parseFloat(item.style.top) || 0;
+      x = Math.max(0, Math.min(x, truckRect.width - item.offsetWidth));
+      y = Math.max(0, Math.min(y, truckRect.height - item.offsetHeight));
+      item.style.left = x + 'px';
+      item.style.top = y + 'px';
+    }
+
+    function editItem(item) {
+      const name = prompt('Item name:', item.dataset.name);
+      if (name === null) return;
+
+      const length = prompt('Length in inches:', item.dataset.length);
+      if (length === null) return;
+
+      const width = prompt('Width/depth in inches:', item.dataset.width);
+      if (width === null) return;
+
+      const height = prompt('Height in inches:', item.dataset.height);
+      if (height === null) return;
+
+      const weight = prompt('Weight in lbs:', item.dataset.weight);
+      if (weight === null) return;
+
+      item.dataset.name = name;
+      item.dataset.length = Number(length);
+      item.dataset.width = Number(width);
+      item.dataset.height = Number(height);
+      item.dataset.weight = Number(weight);
+
+      const scale = 1.35;
+      item.style.width = Math.max(40, Number(length) * scale) + 'px';
+      item.style.height = Math.max(30, Number(width) * scale) + 'px';
+
+      item.innerHTML = `<div>${name}</div>`;
+      updateSelectedDetails();
+    }
+
+    function makeDraggable(element) {
+
+      let offsetX = 0;
+      let offsetY = 0;
+      let isDragging = false;
+
+      element.addEventListener('mousedown', startDrag);
+      element.addEventListener('touchstart', startDrag);
+
+      function startDrag(e) {
+        if (e.cancelable) e.preventDefault();
+        document.body.classList.add('dragging-active');
+        isDragging = true;
+
+        const rect = element.getBoundingClientRect();
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
+
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchmove', drag, { passive: false });
+
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
+      }
+
+      function drag(e) {
+        if (!isDragging) return;
+        if (e.cancelable) e.preventDefault();
+
+        const truckRect = document.getElementById('truckBed').getBoundingClientRect();
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        let x = clientX - truckRect.left - offsetX;
+        let y = clientY - truckRect.top - offsetY;
+
+        x = Math.max(0, Math.min(x, truckRect.width - element.offsetWidth));
+        y = Math.max(0, Math.min(y, truckRect.height - element.offsetHeight));
+
+        element.style.left = x + 'px';
+        element.style.top = y + 'px';
+      }
+
+      function stopDrag() {
+        document.body.classList.remove('dragging-active');
+        isDragging = false;
+
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('touchmove', drag);
+      }
+    }
+
+  </script></body>
+</html>
