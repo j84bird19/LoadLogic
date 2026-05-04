@@ -55,6 +55,19 @@ body.dragging-active {
   overflow: hidden;
 }
 .item-box.selected { outline: 4px solid #facc15; }
+.item-box.valid-placement { outline: 4px solid #22c55e; }
+.item-box.invalid-placement { outline: 4px solid #ef4444; }
+.staging-item {
+  background: #f97316;
+  border: 2px solid white;
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: bold;
+  text-align: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
 .panel {
   background: #0f172a;
   border: 1px solid #334155;
@@ -185,13 +198,15 @@ body.dragging-active {
     <input id="itemWidth" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Width" value="24" />
     <input id="itemHeight" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Height" value="36" />
     <input id="itemWeight" type="number" class="w-full mb-3 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Weight" value="80" />
-    <button onclick="createCustomItem()" class="w-full bg-orange-500 hover:bg-orange-600 p-2 rounded-xl font-bold mb-2">Create + Place Item</button>
+    <button onclick="createStagingItem()" class="w-full bg-orange-500 hover:bg-orange-600 p-2 rounded-xl font-bold mb-2">Create Item In Staging</button>
     <button onclick="closeItemForm()" class="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded-xl">Cancel</button>
   </div>
 
   <div id="stagePlaceholder" class="stage-box flex items-center justify-center text-center text-slate-500">
     Tap <strong class="text-orange-400 mx-1">Add Item</strong> to create a custom measured object.
   </div>
+
+  <div id="stagingPreview" class="stage-box hidden-page"></div>
 </div>
 
 <!-- CATEGORY / DETAILS RIGHT -->
@@ -285,6 +300,10 @@ function quickCategory(type) {
 }
 
 function createCustomItem() {
+  createStagingItem();
+}
+
+function createStagingItem() {
   const data = {
     name: document.getElementById('itemName').value || 'Item',
     length: Number(document.getElementById('itemLength').value) || 48,
@@ -295,8 +314,27 @@ function createCustomItem() {
     y: 80,
     rotated: false
   };
-  addItemBox(data);
+
   closeItemForm();
+
+  const staging = document.getElementById('stagingPreview');
+  const placeholder = document.getElementById('stagePlaceholder');
+  staging.classList.remove('hidden-page');
+  placeholder.classList.add('hidden-page');
+
+  staging.innerHTML = `
+    <p class="text-xs text-slate-400 mb-2">Drag this into the truck bed:</p>
+    <div id="stagingItem" class="staging-item">
+      ${data.name}<br>
+      <span class="text-xs font-normal">${data.length}" × ${data.width}" × ${data.height}"</span>
+    </div>
+  `;
+
+  const stagingItem = document.getElementById('stagingItem');
+  stagingItem.dataset.itemData = JSON.stringify(data);
+  stagingItem.addEventListener('pointerdown', function(e) {
+    startStagingDrag(e, stagingItem);
+  });
 }
 
 function addItemBox(data) {
@@ -460,6 +498,67 @@ function keepItemInsideTruck(item) {
   item.style.top = y + 'px';
 }
 
+function startStagingDrag(e, stagingItem) {
+  if (e.cancelable) e.preventDefault();
+  document.body.classList.add('dragging-active');
+
+  const data = JSON.parse(stagingItem.dataset.itemData);
+  const truckBed = document.getElementById('truckBed');
+  const truckRect = truckBed.getBoundingClientRect();
+
+  const ghost = document.createElement('div');
+  ghost.classList.add('item-box');
+  ghost.style.position = 'fixed';
+  ghost.style.zIndex = '9999';
+  ghost.dataset.name = data.name;
+  ghost.dataset.length = data.length;
+  ghost.dataset.width = data.width;
+  ghost.dataset.height = data.height;
+  ghost.dataset.weight = data.weight;
+  ghost.dataset.rotated = 'false';
+  ghost.innerHTML = `<div>${data.name}</div>`;
+  document.body.appendChild(ghost);
+  setItemSize(ghost);
+
+  function move(ev) {
+    if (ev.cancelable) ev.preventDefault();
+    ghost.style.left = (ev.clientX - ghost.offsetWidth / 2) + 'px';
+    ghost.style.top = (ev.clientY - ghost.offsetHeight / 2) + 'px';
+
+    const tempX = ev.clientX - truckRect.left - ghost.offsetWidth / 2;
+    const tempY = ev.clientY - truckRect.top - ghost.offsetHeight / 2;
+    ghost.dataset.tempX = tempX;
+    ghost.dataset.tempY = tempY;
+
+    if (isPlacementValid(ghost, tempX, tempY, true)) {
+      ghost.classList.remove('invalid-placement');
+      ghost.classList.add('valid-placement');
+    } else {
+      ghost.classList.remove('valid-placement');
+      ghost.classList.add('invalid-placement');
+    }
+  }
+
+  function up(ev) {
+    const x = Number(ghost.dataset.tempX);
+    const y = Number(ghost.dataset.tempY);
+
+    if (isPlacementValid(ghost, x, y, true)) {
+      addItemBox({ ...data, x, y, rotated: false });
+    } else {
+      alert('That item cannot be placed there. It overlaps something or is outside the truck bed.');
+    }
+
+    ghost.remove();
+    document.body.classList.remove('dragging-active');
+    document.removeEventListener('pointermove', move);
+    document.removeEventListener('pointerup', up);
+  }
+
+  document.addEventListener('pointermove', move, { passive: false });
+  document.addEventListener('pointerup', up);
+}
+
 function startDrag(e, element) {
   if (e.cancelable) e.preventDefault();
   document.body.classList.add('dragging-active');
@@ -473,13 +572,31 @@ function startDrag(e, element) {
     const truckRect = document.getElementById('truckBed').getBoundingClientRect();
     let x = ev.clientX - truckRect.left - offsetX;
     let y = ev.clientY - truckRect.top - offsetY;
-    x = Math.max(0, Math.min(x, truckRect.width - element.offsetWidth));
-    y = Math.max(0, Math.min(y, truckRect.height - element.offsetHeight));
+
     element.style.left = x + 'px';
     element.style.top = y + 'px';
+
+    if (isPlacementValid(element, x, y, false)) {
+      element.classList.remove('invalid-placement');
+      element.classList.add('valid-placement');
+    } else {
+      element.classList.remove('valid-placement');
+      element.classList.add('invalid-placement');
+    }
   }
 
   function up() {
+    const x = parseFloat(element.style.left) || 0;
+    const y = parseFloat(element.style.top) || 0;
+
+    if (!isPlacementValid(element, x, y, false)) {
+      keepItemInsideTruck(element);
+      alert('Invalid placement. Move it away from wheel wells, other items, or truck edges.');
+    }
+
+    element.classList.remove('valid-placement');
+    element.classList.remove('invalid-placement');
+    selectItem(element);
     document.body.classList.remove('dragging-active');
     document.removeEventListener('pointermove', move);
     document.removeEventListener('pointerup', up);
@@ -487,6 +604,45 @@ function startDrag(e, element) {
 
   document.addEventListener('pointermove', move, { passive: false });
   document.addEventListener('pointerup', up);
+}
+
+function isPlacementValid(item, x, y, checkWheelWells) {
+  const truckBed = document.getElementById('truckBed');
+  const truckWidth = truckBed.clientWidth;
+  const truckHeight = truckBed.clientHeight;
+  const itemWidth = item.offsetWidth;
+  const itemHeight = item.offsetHeight;
+
+  if (x < 0 || y < 0 || x + itemWidth > truckWidth || y + itemHeight > truckHeight) {
+    return false;
+  }
+
+  const itemRect = { left: x, top: y, right: x + itemWidth, bottom: y + itemHeight };
+
+  const existingItems = Array.from(document.querySelectorAll('#truckBed .item-box')).filter(existing => existing !== item);
+  for (const existing of existingItems) {
+    const ex = parseFloat(existing.style.left) || 0;
+    const ey = parseFloat(existing.style.top) || 0;
+    const existingRect = { left: ex, top: ey, right: ex + existing.offsetWidth, bottom: ey + existing.offsetHeight };
+    if (rectsOverlap(itemRect, existingRect)) return false;
+  }
+
+  const wheels = Array.from(document.querySelectorAll('#truckBed .wheel'));
+  for (const wheel of wheels) {
+    const wheelRect = {
+      left: wheel.offsetLeft,
+      top: wheel.offsetTop,
+      right: wheel.offsetLeft + wheel.offsetWidth,
+      bottom: wheel.offsetTop + wheel.offsetHeight
+    };
+    if (rectsOverlap(itemRect, wheelRect)) return false;
+  }
+
+  return true;
+}
+
+function rectsOverlap(a, b) {
+  return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
 }
 </script></body>
 </html>
