@@ -55,41 +55,32 @@ body.dragging-active {
   user-select: none;
   overflow: hidden;
 }
-.item-box.selected { outline: 4px solid #facc15; }
-.item-box .item-controls { display: none; }
-.item-box.selected .item-controls { display: block; }
-.resize-handle {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: white;
+.item-box.selected { outline: none; }
+.selection-popover {
+  position: fixed;
+  z-index: 9998;
+  background: #020617;
   border: 2px solid #14b8a6;
-  border-radius: 3px;
-  z-index: 20;
-  touch-action: none;
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+  display: none;
+  min-width: 180px;
 }
-.resize-handle.tl { left: -8px; top: -8px; cursor: nwse-resize; }
-.resize-handle.tr { right: -8px; top: -8px; cursor: nesw-resize; }
-.resize-handle.bl { left: -8px; bottom: -8px; cursor: nesw-resize; }
-.resize-handle.br { right: -8px; bottom: -8px; cursor: nwse-resize; }
-.rotate-handle {
-  position: absolute;
-  left: 50%;
-  top: -46px;
-  transform: translateX(-50%);
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: white;
-  color: #334155;
-  border: 3px solid #14b8a6;
-  display: grid;
-  place-items: center;
-  font-size: 22px;
-  font-weight: bold;
-  z-index: 25;
-  touch-action: none;
+.selection-popover.show { display: block; }
+.popover-btn {
+  width: 100%;
+  background: #334155;
+  padding: 8px;
+  border-radius: 10px;
+  margin-top: 6px;
+  font-size: 13px;
 }
+.popover-btn:hover { background: #475569; }
+.popover-danger { background: #991b1b; }
+.popover-danger:hover { background: #b91c1c; }
+.item-box .item-controls { display: none; }
+.item-box.selected .item-controls { display: none; }
 .item-box.valid-placement { outline: 4px solid #22c55e; }
 .item-box.invalid-placement { outline: 4px solid #ef4444; }
 .staging-item {
@@ -192,7 +183,14 @@ body.dragging-active {
 <button onclick="launchWorkspace()" class="w-full bg-orange-500 hover:bg-orange-600 p-4 rounded-xl font-bold">Launch Workspace</button>
 
   </div>
-</div><!-- WORKSPACE PAGE --><div id="workspacePage" class="hidden-page">
+</div><!-- WORKSPACE PAGE --><div id="selectionPopover" class="selection-popover">
+  <div class="text-sm font-bold text-white mb-1" id="popoverItemName">Selected Item</div>
+  <div class="text-xs text-slate-400 mb-2" id="popoverItemSize">--</div>
+  <button onclick="rotateSelectedItem()" class="popover-btn">Rotate 90°</button>
+  <button onclick="openResizePrompt()" class="popover-btn">Resize / Edit Dimensions</button>
+  <button onclick="saveSelectedItem()" class="popover-btn">Save Item</button>
+  <button onclick="deleteSelectedItem()" class="popover-btn popover-danger">Delete Item</button>
+</div><div id="workspacePage" class="hidden-page">
   <div class="flex flex-wrap gap-2 mb-3">
     <button onclick="goToDashboard()" class="small-btn">Dashboard</button>
     <button onclick="openItemForm()" class="orange-btn">Add Item</button>
@@ -502,6 +500,28 @@ function selectItem(item) {
   selectedItem = item;
   item.classList.add('selected');
   updateSelectedDetails();
+  showSelectionPopover(item);
+}
+
+function showSelectionPopover(item) {
+  const popover = document.getElementById('selectionPopover');
+  if (!popover || !item) return;
+
+  const rect = item.getBoundingClientRect();
+  const left = Math.min(window.innerWidth - 200, Math.max(8, rect.left));
+  const top = Math.max(8, rect.top - 120);
+
+  document.getElementById('popoverItemName').innerText = item.dataset.name;
+  document.getElementById('popoverItemSize').innerText = `${item.dataset.length}" × ${item.dataset.width}" × ${item.dataset.height}"`;
+
+  popover.style.left = left + 'px';
+  popover.style.top = top + 'px';
+  popover.classList.add('show');
+}
+
+function hideSelectionPopover() {
+  const popover = document.getElementById('selectionPopover');
+  if (popover) popover.classList.remove('show');
 }
 
 function updateSelectedDetails() {
@@ -527,90 +547,52 @@ function rotateSelectedItem() {
   setItemSize(selectedItem);
   keepItemInsideTruck(selectedItem);
   updateSelectedDetails();
+  showSelectionPopover(selectedItem);
+}
+
+function openResizePrompt() {
+  if (!selectedItem) { alert('Tap an item first.'); return; }
+
+  const name = prompt('Item name:', selectedItem.dataset.name);
+  if (name === null) return;
+
+  const length = prompt('Length in inches:', selectedItem.dataset.length);
+  if (length === null) return;
+
+  const width = prompt('Width/depth in inches:', selectedItem.dataset.width);
+  if (width === null) return;
+
+  const height = prompt('Height in inches:', selectedItem.dataset.height);
+  if (height === null) return;
+
+  const weight = prompt('Weight in lbs:', selectedItem.dataset.weight);
+  if (weight === null) return;
+
+  selectedItem.dataset.name = name || 'Item';
+  selectedItem.dataset.length = Number(length) || 1;
+  selectedItem.dataset.width = Number(width) || 1;
+  selectedItem.dataset.height = Number(height) || 1;
+  selectedItem.dataset.weight = Number(weight) || 0;
+  selectedItem.innerHTML = buildItemInnerHTML(selectedItem.dataset.name);
+  wireItemControls(selectedItem);
+  setItemSize(selectedItem);
+  keepItemInsideTruck(selectedItem);
+  updateSelectedDetails();
+  showSelectionPopover(selectedItem);
+}
+
+function deleteSelectedItem() {
+  if (!selectedItem) return;
+  selectedItem.remove();
+  selectedItem = null;
+  hideSelectionPopover();
+  updateSelectedDetails();
 }
 
 function startResize(e, item, handle) {
-  document.body.classList.add('dragging-active');
-
-  const truckBed = document.getElementById('truckBed');
-  const truckRect = truckBed.getBoundingClientRect();
-  const startX = e.clientX;
-  const startY = e.clientY;
-  const startLeft = parseFloat(item.style.left) || 0;
-  const startTop = parseFloat(item.style.top) || 0;
-  const startWidth = item.offsetWidth;
-  const startHeight = item.offsetHeight;
-  const minWidth = 30;
-  const minHeight = 24;
-  const isLeft = handle.classList.contains('tl') || handle.classList.contains('bl');
-  const isTop = handle.classList.contains('tl') || handle.classList.contains('tr');
-
-  function move(ev) {
-    if (ev.cancelable) ev.preventDefault();
-    const dx = ev.clientX - startX;
-    const dy = ev.clientY - startY;
-
-    let newLeft = startLeft;
-    let newTop = startTop;
-    let newWidth = startWidth;
-    let newHeight = startHeight;
-
-    if (isLeft) {
-      newWidth = startWidth - dx;
-      newLeft = startLeft + dx;
-    } else {
-      newWidth = startWidth + dx;
-    }
-
-    if (isTop) {
-      newHeight = startHeight - dy;
-      newTop = startTop + dy;
-    } else {
-      newHeight = startHeight + dy;
-    }
-
-    newWidth = Math.max(minWidth, newWidth);
-    newHeight = Math.max(minHeight, newHeight);
-
-    if (newLeft < 0) {
-      newWidth += newLeft;
-      newLeft = 0;
-    }
-    if (newTop < 0) {
-      newHeight += newTop;
-      newTop = 0;
-    }
-    if (newLeft + newWidth > truckRect.width) newWidth = truckRect.width - newLeft;
-    if (newTop + newHeight > truckRect.height) newHeight = truckRect.height - newTop;
-
-    item.style.left = newLeft + 'px';
-    item.style.top = newTop + 'px';
-    item.style.width = newWidth + 'px';
-    item.style.height = newHeight + 'px';
-
-    updateItemDimensionsFromPixels(item);
-
-    if (isPlacementValid(item, newLeft, newTop, false)) {
-      item.classList.remove('invalid-placement');
-      item.classList.add('valid-placement');
-    } else {
-      item.classList.remove('valid-placement');
-      item.classList.add('invalid-placement');
-    }
-
-    updateSelectedDetails();
-  }
-
-  function up() {
-    item.classList.remove('valid-placement');
-    item.classList.remove('invalid-placement');
-    document.body.classList.remove('dragging-active');
-    document.removeEventListener('pointermove', move);
-    document.removeEventListener('pointerup', up);
-  }
-
-  document.addEventListener('pointermove', move, { passive: false });
-  document.addEventListener('pointerup', up);
+  // Resize handles are paused for this prototype version.
+  // Exact resizing now uses the popup editor so dimensions stay accurate.
+  openResizePrompt();
 }
 
 function updateItemDimensionsFromPixels(item) {
@@ -715,6 +697,7 @@ function openSavedProject(id) {
 function clearTruckBedItems() {
   document.querySelectorAll('.item-box').forEach(item => item.remove());
   selectedItem = null;
+  hideSelectionPopover();
   const panel = document.getElementById('selectedDetails');
   if (panel) panel.innerHTML = '<h4 class="font-bold text-white mb-2">Selected Item</h4><p class="text-slate-500">Tap an item to see dimensions here.</p>';
 }
@@ -800,6 +783,7 @@ function startDrag(e, element) {
 
   function move(ev) {
     if (ev.cancelable) ev.preventDefault();
+    hideSelectionPopover();
     const truckRect = document.getElementById('truckBed').getBoundingClientRect();
     let x = ev.clientX - truckRect.left - offsetX;
     let y = ev.clientY - truckRect.top - offsetY;
@@ -828,6 +812,7 @@ function startDrag(e, element) {
     element.classList.remove('valid-placement');
     element.classList.remove('invalid-placement');
     selectItem(element);
+    showSelectionPopover(element);
     document.body.classList.remove('dragging-active');
     document.removeEventListener('pointermove', move);
     document.removeEventListener('pointerup', up);
