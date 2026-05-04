@@ -10,91 +10,228 @@ body {
   color: white;
   font-family: Arial, sans-serif;
   overscroll-behavior: none;
-}body.dragging-active { overflow: hidden; touch-action: none; }
-
+}
+body.dragging-active {
+  overflow: hidden;
+  touch-action: none;
+}
 .hidden-page { display: none; }
-
-.truck-bed { position: relative; width: 100%; max-width: 680px; height: 300px; background: #1e293b; border: 5px solid #475569; border-radius: 24px; margin: auto; overflow: hidden; }
-
-.wheel { position: absolute; width: 40px; height: 100px; background: #020617; border-radius: 12px; top: 50%; transform: translateY(-50%); }
-
+.truck-bed {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  background: #1e293b;
+  border: 5px solid #475569;
+  border-radius: 22px;
+  margin: auto;
+  overflow: hidden;
+}
+.wheel {
+  position: absolute;
+  width: 36px;
+  height: 92px;
+  background: #020617;
+  border-radius: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
 .wheel.left { left: 10px; }
-
 .wheel.right { right: 10px; }
-
-.item-box { position: absolute; background: #f97316; border: 2px solid white; border-radius: 12px; cursor: grab; touch-action: none; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12px; font-weight: bold; padding: 4px; user-select: none; overflow: hidden; }
-
-.item-box.selected { outline: 4px solid #facc15; } </style>
-
+.item-box {
+  position: absolute;
+  background: #f97316;
+  border: 2px solid white;
+  border-radius: 12px;
+  cursor: grab;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px;
+  user-select: none;
+  overflow: hidden;
+}
+.item-box.selected { outline: 4px solid #facc15; }
+.panel {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 22px;
+  padding: 14px;
+}
+.stage-box {
+  min-height: 160px;
+  background: #020617;
+  border: 2px dashed #475569;
+  border-radius: 18px;
+  padding: 12px;
+}
+.small-btn {
+  background: #334155;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+.small-btn:hover { background: #475569; }
+.orange-btn {
+  background: #f97316;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 14px;
+}
+.green-btn {
+  background: #16a34a;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 14px;
+}
+.category-btn {
+  width: 100%;
+  text-align: left;
+  background: #020617;
+  border: 1px solid #334155;
+  padding: 10px;
+  border-radius: 14px;
+  margin-bottom: 8px;
+}
+.category-btn:hover { background: #1e293b; }
+</style>
 </head>
-<body class="p-4">
-<div class="max-w-5xl mx-auto">
-<h1 class="text-3xl font-black text-orange-400 mb-2">LoadLogic</h1>
-<p class="text-slate-400 mb-6">Truck Bed Planning Simulator</p><div id="loginPage">
-<div class="max-w-md mx-auto bg-slate-900 rounded-3xl p-6 border border-slate-700">
-<h2 class="text-2xl font-bold mb-4">Login</h2>
-<input id="username" type="text" value="Bird" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-4" />
-<button onclick="goToDashboard()" class="w-full bg-orange-500 hover:bg-orange-600 p-3 rounded-xl font-bold">Continue</button>
-</div>
-</div><div id="dashboardPage" class="hidden-page">
-<div class="bg-slate-900 rounded-3xl p-5 border border-slate-700 mb-6">
-<h2 class="text-2xl font-bold">Dashboard</h2>
-<p class="text-slate-400">No saved projects yet.</p>
-</div><button onclick="goToSetup()" class="bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded-xl font-bold mb-6">Start New Project</button>
+<body class="p-3">
+<div class="max-w-6xl mx-auto">
+<h1 class="text-3xl font-black text-orange-400 mb-1">LoadLogic</h1>
+<p class="text-slate-400 mb-4">Truck Bed Planning Simulator</p><!-- LOGIN PAGE --><div id="loginPage">
+  <div class="max-w-md mx-auto bg-slate-900 rounded-3xl p-6 border border-slate-700">
+    <h2 class="text-2xl font-bold mb-4">Login</h2>
+    <input id="username" type="text" value="Bird" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-4" />
+    <button onclick="goToDashboard()" class="w-full bg-orange-500 hover:bg-orange-600 p-3 rounded-xl font-bold">Continue</button>
+  </div>
+</div><!-- DASHBOARD PAGE --><div id="dashboardPage" class="hidden-page">
+  <div class="panel mb-4">
+    <h2 class="text-2xl font-bold">Dashboard</h2>
+    <p class="text-slate-400">Start new projects or reopen saved local projects.</p>
+  </div>  <div class="grid grid-cols-3 gap-3 mb-4">
+    <div class="panel"><p class="text-slate-400 text-sm">Projects</p><p id="projectCount" class="text-orange-400 text-2xl font-bold">0</p></div>
+    <div class="panel"><p class="text-slate-400 text-sm">Builds</p><p class="text-orange-400 text-2xl font-bold">0</p></div>
+    <div class="panel"><p class="text-slate-400 text-sm">Items</p><p id="itemCountDisplay" class="text-orange-400 text-2xl font-bold">0</p></div>
+  </div><button onclick="goToSetup()" class="orange-btn mb-4">Start New Project</button>
 
-</div><div id="setupPage" class="hidden-page">
-<button onclick="goToDashboard()" class="mb-4 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl">Back</button><div class="bg-slate-900 rounded-3xl p-6 border border-slate-700">
-<h2 class="text-3xl font-bold mb-6">New Project Setup</h2><input id="projectName" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-4" value="New Project" />
-<input id="truckMake" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-4" value="Ford" />
-<input id="truckModel" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-4" value="F-150" /><div class="grid grid-cols-2 gap-4 mb-6">
-<button onclick="selectMode('Load')" id="loadModeBtn" class="p-4 rounded-3xl border border-orange-500 bg-orange-500/20">Load Mode</button>
-<button onclick="selectMode('Build')" id="buildModeBtn" class="p-4 rounded-3xl border border-slate-700 bg-slate-950">Build Mode</button>
-</div><button onclick="launchWorkspace()" class="w-full bg-orange-500 hover:bg-orange-600 p-4 rounded-xl font-bold">Launch Workspace</button>
+  <div class="panel">
+    <h3 class="text-xl font-bold mb-3">Saved Projects</h3>
+    <div id="savedProjectsList" class="space-y-3 text-slate-400">No saved projects yet.</div>
+  </div>
+</div><!-- SETUP PAGE --><div id="setupPage" class="hidden-page">
+  <button onclick="goToDashboard()" class="small-btn mb-4">Back</button>
+  <div class="panel">
+    <h2 class="text-3xl font-bold mb-6">New Project Setup</h2>
+    <input id="projectName" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-3" value="New Project" />
+    <input id="truckMake" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-3" value="Ford" />
+    <input id="truckModel" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-4" value="F-150" /><div class="grid grid-cols-2 gap-3 mb-4">
+  <button onclick="selectMode('Load')" id="loadModeBtn" class="p-4 rounded-3xl border border-orange-500 bg-orange-500/20">Load Mode</button>
+  <button onclick="selectMode('Build')" id="buildModeBtn" class="p-4 rounded-3xl border border-slate-700 bg-slate-950">Build Mode</button>
+</div>
 
-</div>
-</div><div id="workspacePage" class="hidden-page">
-<div class="flex flex-wrap gap-3 mb-4">
-<button onclick="goToDashboard()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl">Dashboard</button>
-<button onclick="openItemForm()" class="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-xl">Add Item</button>
-<button onclick="rotateSelectedItem()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl">Rotate Selected</button>
-</div><div class="bg-slate-900 rounded-3xl p-4 border border-slate-700 mb-4">
-<h2 id="workspaceTitle" class="text-2xl font-bold mb-1">Workspace</h2>
-<p id="workspaceInfo" class="text-slate-400"></p>
-</div><div class="grid gap-4">
-<div class="bg-slate-900 rounded-3xl p-4 border border-slate-700">
-<h3 class="text-xl font-bold mb-3">2D Truck Bed Workspace</h3><div id="truckBed" class="truck-bed">
-<div class="wheel left"></div>
-<div class="wheel right"></div>
-</div>
-</div><div class="bg-slate-900 rounded-3xl p-4 border border-slate-700">
-<h3 class="text-xl font-bold mb-3">Item Controls</h3><div id="itemForm" class="hidden-page bg-slate-950 p-4 rounded-2xl border border-slate-700 mb-4">
-<input id="itemName" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Item Name" value="Dresser" />
-<input id="itemLength" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Length" value="60" />
-<input id="itemWidth" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Width" value="24" />
-<input id="itemHeight" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Height" value="36" />
-<input id="itemWeight" type="number" class="w-full mb-3 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Weight" value="80" /><button onclick="createCustomItem()" class="w-full bg-orange-500 hover:bg-orange-600 p-2 rounded-xl font-bold mb-2">Create Item</button> <button onclick="closeItemForm()" class="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded-xl">Cancel</button>
+<button onclick="launchWorkspace()" class="w-full bg-orange-500 hover:bg-orange-600 p-4 rounded-xl font-bold">Launch Workspace</button>
 
-</div><div id="selectedDetails" class="bg-slate-950 p-4 rounded-2xl text-slate-300 text-sm">
-<h4 class="font-bold text-white mb-2">Selected Item</h4>
-<p class="text-slate-500">Tap an item to see dimensions here.</p>
+  </div>
+</div><!-- WORKSPACE PAGE --><div id="workspacePage" class="hidden-page">
+  <div class="flex flex-wrap gap-2 mb-3">
+    <button onclick="goToDashboard()" class="small-btn">Dashboard</button>
+    <button onclick="openItemForm()" class="orange-btn">Add Item</button>
+    <button onclick="rotateSelectedItem()" class="small-btn">Rotate</button>
+    <button onclick="saveSelectedItem()" class="small-btn">Save Item</button>
+    <button onclick="saveProject()" class="green-btn">Save Project</button>
+  </div>  <div class="panel mb-3">
+    <h2 id="workspaceTitle" class="text-2xl font-bold mb-1">Workspace</h2>
+    <p id="workspaceInfo" class="text-slate-400"></p>
+  </div>  <!-- TOP TRUCK AREA -->  <div class="panel mb-3">
+    <div class="flex items-center justify-between gap-2 mb-2">
+      <h3 class="text-xl font-bold">Truck Bed / Bird's-Eye View</h3>
+      <span class="text-xs bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full">2D Mode</span>
+    </div>
+    <div id="truckBed" class="truck-bed">
+      <div class="wheel left"></div>
+      <div class="wheel right"></div>
+    </div>
+  </div>  <!-- SKETCH STYLE LOWER LAYOUT -->  <div class="grid gap-3 md:grid-cols-[1fr_1.35fr_0.9fr]"><!-- SAVED AREA LEFT -->
+<div class="panel">
+  <h3 class="text-lg font-bold mb-2">Saved Area</h3>
+  <p class="text-xs text-slate-400 mb-3">Saved items, saved builds, and reusable project pieces.</p>
+
+  <div class="grid grid-cols-2 gap-2 mb-3">
+    <button class="small-btn">Items</button>
+    <button class="small-btn">Builds</button>
+  </div>
+
+  <div class="stage-box">
+    <h4 class="font-bold text-white mb-2">Saved Items</h4>
+    <div id="savedItemsList" class="space-y-2 text-slate-400 text-sm">No saved items yet.</div>
+  </div>
 </div>
+
+<!-- BUILD / STAGING AREA CENTER -->
+<div class="panel">
+  <h3 id="centerAreaTitle" class="text-lg font-bold mb-2">Staging Area</h3>
+  <p id="centerAreaText" class="text-xs text-slate-400 mb-3">Create or edit an item here, then place it in the truck bed.</p>
+
+  <div id="itemForm" class="stage-box hidden-page mb-3">
+    <h4 class="font-bold mb-3">Custom Item</h4>
+    <input id="itemName" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Item Name" value="Dresser" />
+    <input id="itemLength" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Length" value="60" />
+    <input id="itemWidth" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Width" value="24" />
+    <input id="itemHeight" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Height" value="36" />
+    <input id="itemWeight" type="number" class="w-full mb-3 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Weight" value="80" />
+    <button onclick="createCustomItem()" class="w-full bg-orange-500 hover:bg-orange-600 p-2 rounded-xl font-bold mb-2">Create + Place Item</button>
+    <button onclick="closeItemForm()" class="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded-xl">Cancel</button>
+  </div>
+
+  <div id="stagePlaceholder" class="stage-box flex items-center justify-center text-center text-slate-500">
+    Tap <strong class="text-orange-400 mx-1">Add Item</strong> to create a custom measured object.
+  </div>
 </div>
+
+<!-- CATEGORY / DETAILS RIGHT -->
+<div class="panel">
+  <h3 class="text-lg font-bold mb-2">Categories / Details</h3>
+  <p class="text-xs text-slate-400 mb-3">Choose item types now. Later this becomes furniture, tools, hardware, materials, etc.</p>
+
+  <button onclick="quickCategory('Furniture')" class="category-btn">Furniture</button>
+  <button onclick="quickCategory('Appliance')" class="category-btn">Appliance</button>
+  <button onclick="quickCategory('Tool Box')" class="category-btn">Tool Box</button>
+  <button onclick="quickCategory('Material')" class="category-btn">Material</button>
+  <button onclick="quickCategory('Custom Build')" class="category-btn">Custom Build</button>
+
+  <div id="selectedDetails" class="mt-3 bg-slate-950 p-4 rounded-2xl text-slate-300 text-sm">
+    <h4 class="font-bold text-white mb-2">Selected Item</h4>
+    <p class="text-slate-500">Tap an item to see dimensions here.</p>
+  </div>
 </div>
+
+  </div>
 </div>
 </div><script>
 let currentMode = 'Load';
-let itemCount = 0;
 let selectedItem = null;
+let activeProjectId = null;
+let currentProjectMeta = { name: 'New Project', truck: 'Ford F-150', mode: 'Load' };
+const scale = 1.35;
+
+function getProjects() { return JSON.parse(localStorage.getItem('loadlogicProjects') || '[]'); }
+function setProjects(projects) { localStorage.setItem('loadlogicProjects', JSON.stringify(projects)); }
+function getSavedItems() { return JSON.parse(localStorage.getItem('loadlogicItems') || '[]'); }
+function setSavedItems(items) { localStorage.setItem('loadlogicItems', JSON.stringify(items)); }
 
 function hideAllPages() {
-  document.getElementById('loginPage').classList.add('hidden-page');
-  document.getElementById('dashboardPage').classList.add('hidden-page');
-  document.getElementById('setupPage').classList.add('hidden-page');
-  document.getElementById('workspacePage').classList.add('hidden-page');
+  ['loginPage','dashboardPage','setupPage','workspacePage'].forEach(id => document.getElementById(id).classList.add('hidden-page'));
 }
 
 function goToDashboard() {
   hideAllPages();
+  updateDashboard();
   document.getElementById('dashboardPage').classList.remove('hidden-page');
 }
 
@@ -105,73 +242,92 @@ function goToSetup() {
 
 function selectMode(mode) {
   currentMode = mode;
+  document.getElementById('loadModeBtn').className = 'p-4 rounded-3xl border border-slate-700 bg-slate-950';
+  document.getElementById('buildModeBtn').className = 'p-4 rounded-3xl border border-slate-700 bg-slate-950';
+  document.getElementById(mode === 'Load' ? 'loadModeBtn' : 'buildModeBtn').className = 'p-4 rounded-3xl border border-orange-500 bg-orange-500/20';
 }
 
 function launchWorkspace() {
+  activeProjectId = Date.now();
+  const projectName = document.getElementById('projectName').value || 'New Project';
+  const truckMake = document.getElementById('truckMake').value || 'Truck';
+  const truckModel = document.getElementById('truckModel').value || 'Model';
+  currentProjectMeta = { name: projectName, truck: truckMake + ' ' + truckModel, mode: currentMode };
+  clearTruckBedItems();
+  openWorkspaceScreen();
+}
+
+function openWorkspaceScreen() {
   hideAllPages();
   document.getElementById('workspacePage').classList.remove('hidden-page');
-
-  const projectName = document.getElementById('projectName').value;
-  const truckMake = document.getElementById('truckMake').value;
-  const truckModel = document.getElementById('truckModel').value;
-
-  document.getElementById('workspaceTitle').innerText = projectName;
-  document.getElementById('workspaceInfo').innerText = truckMake + ' ' + truckModel + ' • ' + currentMode + ' Mode';
+  document.getElementById('workspaceTitle').innerText = currentProjectMeta.name;
+  document.getElementById('workspaceInfo').innerText = currentProjectMeta.truck + ' • ' + currentProjectMeta.mode + ' Mode';
+  document.getElementById('centerAreaTitle').innerText = currentProjectMeta.mode === 'Build' ? 'Build Area' : 'Staging Area';
+  document.getElementById('centerAreaText').innerText = currentProjectMeta.mode === 'Build'
+    ? 'Assemble frames, drawers, racks, and materials here before placing them in the truck.'
+    : 'Create or edit an item here, then place it in the truck bed.';
+  renderSavedItems();
 }
 
 function openItemForm() {
   document.getElementById('itemForm').classList.remove('hidden-page');
+  document.getElementById('stagePlaceholder').classList.add('hidden-page');
 }
 
 function closeItemForm() {
   document.getElementById('itemForm').classList.add('hidden-page');
+  document.getElementById('stagePlaceholder').classList.remove('hidden-page');
+}
+
+function quickCategory(type) {
+  openItemForm();
+  document.getElementById('itemName').value = type;
 }
 
 function createCustomItem() {
-  const name = document.getElementById('itemName').value;
-  const length = Number(document.getElementById('itemLength').value);
-  const width = Number(document.getElementById('itemWidth').value);
-  const height = Number(document.getElementById('itemHeight').value);
-  const weight = Number(document.getElementById('itemWeight').value);
-
-  addItemBox(name, length, width, height, weight);
+  const data = {
+    name: document.getElementById('itemName').value || 'Item',
+    length: Number(document.getElementById('itemLength').value) || 48,
+    width: Number(document.getElementById('itemWidth').value) || 24,
+    height: Number(document.getElementById('itemHeight').value) || 24,
+    weight: Number(document.getElementById('itemWeight').value) || 0,
+    x: 80,
+    y: 80,
+    rotated: false
+  };
+  addItemBox(data);
   closeItemForm();
 }
 
-function addItemBox(name, length, width, height, weight) {
+function addItemBox(data) {
   const truckBed = document.getElementById('truckBed');
   const item = document.createElement('div');
   item.classList.add('item-box');
-
-  const scale = 1.35;
-
-  item.style.width = Math.max(40, length * scale) + 'px';
-  item.style.height = Math.max(30, width * scale) + 'px';
-  item.style.left = '80px';
-  item.style.top = '80px';
-
-  item.dataset.name = name;
-  item.dataset.length = length;
-  item.dataset.width = width;
-  item.dataset.height = height;
-  item.dataset.weight = weight;
-  item.dataset.rotated = 'false';
-
-  item.innerHTML = `<div>${name}</div>`;
-
-  item.addEventListener('click', function() {
-    selectItem(item);
-  });
-
+  item.style.left = (data.x || 80) + 'px';
+  item.style.top = (data.y || 80) + 'px';
+  item.dataset.name = data.name;
+  item.dataset.length = data.length;
+  item.dataset.width = data.width;
+  item.dataset.height = data.height;
+  item.dataset.weight = data.weight;
+  item.dataset.rotated = data.rotated ? 'true' : 'false';
+  item.innerHTML = `<div>${data.name}</div>`;
+  setItemSize(item);
+  item.addEventListener('pointerdown', function(e) { selectItem(item); startDrag(e, item); });
   truckBed.appendChild(item);
-  makeDraggable(item);
+  selectItem(item);
+}
+
+function setItemSize(item) {
+  const length = Number(item.dataset.length);
+  const width = Number(item.dataset.width);
+  const rotated = item.dataset.rotated === 'true';
+  item.style.width = Math.max(40, (rotated ? width : length) * scale) + 'px';
+  item.style.height = Math.max(30, (rotated ? length : width) * scale) + 'px';
 }
 
 function selectItem(item) {
-  document.querySelectorAll('.item-box').forEach(box => {
-    box.classList.remove('selected');
-  });
-
+  document.querySelectorAll('.item-box').forEach(box => box.classList.remove('selected'));
   selectedItem = item;
   item.classList.add('selected');
   updateSelectedDetails();
@@ -179,87 +335,158 @@ function selectItem(item) {
 
 function updateSelectedDetails() {
   const panel = document.getElementById('selectedDetails');
-
-  if (!selectedItem) return;
-
+  if (!selectedItem) {
+    panel.innerHTML = '<h4 class="font-bold text-white mb-2">Selected Item</h4><p class="text-slate-500">Tap an item to see dimensions here.</p>';
+    return;
+  }
+  const rotated = selectedItem.dataset.rotated === 'true' ? 'Yes / 90°' : 'No';
   panel.innerHTML = `
     <h4 class="font-bold text-white mb-2">${selectedItem.dataset.name}</h4>
     <p><strong>Length:</strong> ${selectedItem.dataset.length}"</p>
     <p><strong>Width:</strong> ${selectedItem.dataset.width}"</p>
     <p><strong>Height:</strong> ${selectedItem.dataset.height}"</p>
     <p><strong>Weight:</strong> ${selectedItem.dataset.weight} lbs</p>
+    <p><strong>Rotated:</strong> ${rotated}</p>
   `;
 }
 
 function rotateSelectedItem() {
-  if (!selectedItem) {
-    alert('Select an item first');
-    return;
-  }
-
-  const currentWidth = selectedItem.offsetWidth;
-  const currentHeight = selectedItem.offsetHeight;
-
-  selectedItem.style.width = currentHeight + 'px';
-  selectedItem.style.height = currentWidth + 'px';
+  if (!selectedItem) { alert('Tap an item first.'); return; }
+  selectedItem.dataset.rotated = selectedItem.dataset.rotated === 'true' ? 'false' : 'true';
+  setItemSize(selectedItem);
+  keepItemInsideTruck(selectedItem);
+  updateSelectedDetails();
 }
 
-function makeDraggable(element) {
-  let offsetX = 0;
-  let offsetY = 0;
-  let isDragging = false;
+function saveSelectedItem() {
+  if (!selectedItem) { alert('Tap an item first.'); return; }
+  const items = getSavedItems();
+  items.push({
+    id: Date.now(),
+    name: selectedItem.dataset.name,
+    length: Number(selectedItem.dataset.length),
+    width: Number(selectedItem.dataset.width),
+    height: Number(selectedItem.dataset.height),
+    weight: Number(selectedItem.dataset.weight)
+  });
+  setSavedItems(items);
+  renderSavedItems();
+  alert('Item saved.');
+}
 
-  element.addEventListener('mousedown', startDrag);
-  element.addEventListener('touchstart', startDrag);
-
-  function startDrag(e) {
-    if (e.cancelable) e.preventDefault();
-
-    document.body.classList.add('dragging-active');
-    isDragging = true;
-
-    const rect = element.getBoundingClientRect();
-
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-    offsetX = clientX - rect.left;
-    offsetY = clientY - rect.top;
-
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('touchmove', drag, { passive: false });
-
-    document.addEventListener('mouseup', stopDrag);
-    document.addEventListener('touchend', stopDrag);
+function renderSavedItems() {
+  const list = document.getElementById('savedItemsList');
+  if (!list) return;
+  const items = getSavedItems();
+  if (items.length === 0) {
+    list.innerHTML = 'No saved items yet.';
+    return;
   }
+  list.innerHTML = items.map(item => `
+    <button onclick="loadSavedItem(${item.id})" class="w-full text-left bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-700">
+      <strong>${item.name}</strong><br>${item.length}" × ${item.width}" × ${item.height}" • ${item.weight} lbs
+    </button>
+  `).join('');
+}
 
-  function drag(e) {
-    if (!isDragging) return;
+function loadSavedItem(id) {
+  const item = getSavedItems().find(i => i.id === id);
+  if (!item) return;
+  addItemBox({ ...item, x: 80, y: 80, rotated: false });
+}
 
-    if (e.cancelable) e.preventDefault();
+function saveProject() {
+  const items = Array.from(document.querySelectorAll('.item-box')).map(item => ({
+    name: item.dataset.name,
+    length: Number(item.dataset.length),
+    width: Number(item.dataset.width),
+    height: Number(item.dataset.height),
+    weight: Number(item.dataset.weight),
+    x: parseFloat(item.style.left) || 0,
+    y: parseFloat(item.style.top) || 0,
+    rotated: item.dataset.rotated === 'true'
+  }));
+  const projects = getProjects();
+  const project = { id: activeProjectId || Date.now(), ...currentProjectMeta, items, savedAt: new Date().toLocaleString() };
+  const index = projects.findIndex(p => p.id === project.id);
+  if (index >= 0) projects[index] = project;
+  else projects.push(project);
+  activeProjectId = project.id;
+  setProjects(projects);
+  alert('Project saved.');
+}
 
+function updateDashboard() {
+  const projects = getProjects();
+  const items = getSavedItems();
+  document.getElementById('projectCount').innerText = projects.length;
+  document.getElementById('itemCountDisplay').innerText = items.length;
+  const list = document.getElementById('savedProjectsList');
+  if (projects.length === 0) {
+    list.innerHTML = 'No saved projects yet.';
+    return;
+  }
+  list.innerHTML = projects.map(p => `
+    <button onclick="openSavedProject(${p.id})" class="w-full text-left bg-slate-950 hover:bg-slate-800 p-3 rounded-xl border border-slate-700">
+      <strong class="text-white">${p.name}</strong><br>${p.truck} • ${p.mode} Mode<br><span class="text-xs">Saved: ${p.savedAt}</span>
+    </button>
+  `).join('');
+}
+
+function openSavedProject(id) {
+  const project = getProjects().find(p => p.id === id);
+  if (!project) return;
+  activeProjectId = project.id;
+  currentProjectMeta = { name: project.name, truck: project.truck, mode: project.mode };
+  clearTruckBedItems();
+  openWorkspaceScreen();
+  project.items.forEach(item => addItemBox(item));
+}
+
+function clearTruckBedItems() {
+  document.querySelectorAll('.item-box').forEach(item => item.remove());
+  selectedItem = null;
+  const panel = document.getElementById('selectedDetails');
+  if (panel) panel.innerHTML = '<h4 class="font-bold text-white mb-2">Selected Item</h4><p class="text-slate-500">Tap an item to see dimensions here.</p>';
+}
+
+function keepItemInsideTruck(item) {
+  const truckRect = document.getElementById('truckBed').getBoundingClientRect();
+  let x = parseFloat(item.style.left) || 0;
+  let y = parseFloat(item.style.top) || 0;
+  x = Math.max(0, Math.min(x, truckRect.width - item.offsetWidth));
+  y = Math.max(0, Math.min(y, truckRect.height - item.offsetHeight));
+  item.style.left = x + 'px';
+  item.style.top = y + 'px';
+}
+
+function startDrag(e, element) {
+  if (e.cancelable) e.preventDefault();
+  document.body.classList.add('dragging-active');
+  element.setPointerCapture && element.setPointerCapture(e.pointerId);
+  const rect = element.getBoundingClientRect();
+  const offsetX = e.clientX - rect.left;
+  const offsetY = e.clientY - rect.top;
+
+  function move(ev) {
+    if (ev.cancelable) ev.preventDefault();
     const truckRect = document.getElementById('truckBed').getBoundingClientRect();
-
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-    let x = clientX - truckRect.left - offsetX;
-    let y = clientY - truckRect.top - offsetY;
-
+    let x = ev.clientX - truckRect.left - offsetX;
+    let y = ev.clientY - truckRect.top - offsetY;
     x = Math.max(0, Math.min(x, truckRect.width - element.offsetWidth));
     y = Math.max(0, Math.min(y, truckRect.height - element.offsetHeight));
-
     element.style.left = x + 'px';
     element.style.top = y + 'px';
   }
 
-  function stopDrag() {
+  function up() {
     document.body.classList.remove('dragging-active');
-    isDragging = false;
-
-    document.removeEventListener('mousemove', drag);
-    document.removeEventListener('touchmove', drag);
+    document.removeEventListener('pointermove', move);
+    document.removeEventListener('pointerup', up);
   }
+
+  document.addEventListener('pointermove', move, { passive: false });
+  document.addEventListener('pointerup', up);
 }
 </script></body>
 </html>
