@@ -1,280 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LoadLogic</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body{
-    background:#020617;
-    color:white;
-    font-family:Arial,sans-serif;
-    margin:0;
-    padding:12px;
-}
-.panel{
-    background:#0f172a;
-    border:1px solid #1e293b;
-    border-radius:20px;
-    padding:14px;
-    margin-bottom:14px;
-}
-.truck-bed{
-    position:relative;
-    width:100%;
-    max-width:430px;
-    height:420px;
-    background:#1e293b;
-    border:5px solid #475569;
-    border-radius:22px;
-    margin:auto;
-    overflow:hidden;
-}
-.wheel{
-    position:absolute;
-    width:24px;
-    height:70px;
-    background:#020617;
-    border-radius:20px;
-    top:160px;
-}
-.wheel.left{left:8px;}
-.wheel.right{right:8px;}
-.item-box{
-    position:absolute;
-    background:#f97316;
-    border:2px solid white;
-    border-radius:12px;
-    color:white;
-    font-size:12px;
-    font-weight:bold;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-    padding:4px;
-    cursor:grab;
-    touch-action:none;
-}
-.valid-placement{
-    outline:3px solid #22c55e;
-}
-.invalid-placement{
-    outline:3px solid #ef4444;
-}
-.small-btn{
-    background:#334155;
-    padding:10px;
-    border-radius:10px;
-    font-size:13px;
-}
-.small-btn:hover{
-    background:#475569;
-}
-input{
-    color:white;
-}
+:root{--bg:#020617;--panel:#0f172a;--line:#334155;--muted:#94a3b8;--orange:#f97316;--green:#22c55e;--red:#ef4444;}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:white;font-family:Arial,sans-serif;overscroll-behavior:none;}
+body.dragging-active{overflow:hidden;touch-action:none;}
+.hidden-page{display:none!important;}
+.app-wrap{max-width:1100px;margin:0 auto;padding:12px;}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:14px;margin-bottom:12px;}
+.small-btn{background:#334155;padding:9px 11px;border-radius:12px;font-size:14px;}
+.small-btn:hover{background:#475569;}
+.orange-btn{background:var(--orange);padding:9px 11px;border-radius:12px;font-weight:bold;font-size:14px;}
+.green-btn{background:#16a34a;padding:9px 11px;border-radius:12px;font-weight:bold;font-size:14px;}
+.danger-btn{background:#991b1b;padding:9px 11px;border-radius:12px;font-weight:bold;font-size:14px;}
+.field{width:100%;color:white;background:#020617;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:9px;}
+.stage-box{min-height:130px;background:#020617;border:2px dashed #475569;border-radius:18px;padding:12px;}
+.category-btn{width:100%;text-align:left;background:#020617;border:1px solid var(--line);padding:10px;border-radius:14px;margin-bottom:8px;}
+.category-btn:hover{background:#1e293b;}
+.workspace-canvas{position:relative;width:100%;min-height:620px;background:radial-gradient(circle at 1px 1px,rgba(148,163,184,.18) 1px,transparent 0);background-size:22px 22px;border:2px solid #334155;border-radius:24px;overflow:hidden;touch-action:none;}
+.workspace-label{position:absolute;left:12px;top:10px;z-index:4;color:#94a3b8;font-size:12px;background:rgba(2,6,23,.82);padding:6px 10px;border-radius:999px;border:1px solid #334155;}
+.truck-bed{position:absolute;left:50%;top:58px;transform:translateX(-50%);width:430px;height:420px;background:#1e293b;border:5px solid #475569;border-radius:22px;overflow:hidden;z-index:1;}
+.truck-bed::before{content:"TRUCK BED";position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:11px;color:#94a3b8;letter-spacing:.08em;}
+.wheel{position:absolute;width:36px;height:92px;background:#020617;border:2px solid #64748b;border-radius:13px;top:50%;transform:translateY(-50%);z-index:2;}
+.wheel.left{left:10px;}.wheel.right{right:10px;}
+.item-box{position:absolute;background:#f97316;border:2px solid rgba(255,255,255,.9);border-radius:12px;color:white;font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px;cursor:grab;touch-action:none;user-select:none;overflow:hidden;z-index:5;box-shadow:0 8px 18px rgba(0,0,0,.25);}
+.item-box.valid-placement{outline:4px solid var(--green);}.item-box.invalid-placement{outline:4px solid var(--red);}.item-box.on-truck{box-shadow:0 0 0 1px rgba(34,197,94,.35),0 8px 18px rgba(0,0,0,.25);}.item-box.off-truck{opacity:.88;}
+.mobile-layout{display:flex;flex-direction:column;gap:12px;}
+@media(min-width:900px){.mobile-layout{display:grid;grid-template-columns:1fr 1.1fr 1fr;align-items:start;}.selected-panel{grid-column:1 / -1;}.workspace-canvas{min-height:620px;}}
+@media(max-width:520px){.workspace-canvas{min-height:600px;}.truck-bed{width:calc(100% - 36px);max-width:430px;height:390px;}}
 </style>
 </head>
 <body>
-
-<h1 class="text-3xl font-bold text-orange-400">LoadLogic</h1>
-<p class="text-slate-400 mb-3">Truck Bed Planning Simulator</p>
-
-<div class="flex gap-2 mb-3 flex-wrap">
-<button onclick="openItemForm()" class="bg-orange-500 px-3 py-2 rounded-xl">Add Item</button>
-<button onclick="rotateSelectedItem()" class="bg-slate-700 px-3 py-2 rounded-xl">Rotate</button>
-<button onclick="saveProject()" class="bg-green-600 px-3 py-2 rounded-xl">Save Project</button>
+<div class="app-wrap">
+<h1 class="text-3xl font-black text-orange-400 mb-1">LoadLogic</h1>
+<p class="text-slate-400 mb-4">Truck Bed Planning Simulator</p>
+<section id="loginPage"><div class="panel max-w-md mx-auto"><h2 class="text-2xl font-bold mb-3">Login</h2><input id="username" class="field" value="Bird" /><button onclick="goToDashboard()" class="orange-btn w-full">Continue</button><p class="text-xs text-slate-500 mt-3">Prototype login only. Saves are stored locally on this device/browser.</p></div></section>
+<section id="dashboardPage" class="hidden-page"><div class="panel"><h2 class="text-2xl font-bold">Dashboard</h2><p class="text-slate-400">Start new projects or reopen saved local projects.</p></div><div class="grid grid-cols-3 gap-3 mb-3"><div class="panel"><p class="text-slate-400 text-sm">Projects</p><p id="projectCount" class="text-orange-400 text-2xl font-bold">0</p></div><div class="panel"><p class="text-slate-400 text-sm">Builds</p><p class="text-orange-400 text-2xl font-bold">0</p></div><div class="panel"><p class="text-slate-400 text-sm">Items</p><p id="itemCountDisplay" class="text-orange-400 text-2xl font-bold">0</p></div></div><button onclick="goToSetup()" class="orange-btn mb-3">Start New Project</button><div class="panel"><h3 class="text-xl font-bold mb-3">Saved Projects</h3><div id="savedProjectsList" class="space-y-3 text-slate-400">No saved projects yet.</div></div></section>
+<section id="setupPage" class="hidden-page"><button onclick="goToDashboard()" class="small-btn mb-3">Back</button><div class="panel"><h2 class="text-3xl font-bold mb-4">New Project Setup</h2><input id="projectName" class="field" value="New Project" /><input id="truckMake" class="field" value="Ford" /><input id="truckModel" class="field" value="F-150" /><div class="grid grid-cols-2 gap-3"><input id="bedLength" type="number" class="field" placeholder="Bed Length (in)" value="78" /><input id="bedWidth" type="number" class="field" placeholder="Bed Width (in)" value="50" /></div><div class="grid grid-cols-2 gap-3"><input id="wheelWellWidth" type="number" class="field" placeholder="Wheel Well Width" value="10" /><input id="wheelWellHeight" type="number" class="field" placeholder="Wheel Well Height" value="36" /></div><div class="grid grid-cols-2 gap-3 mb-3"><button onclick="selectMode('Load')" id="loadModeBtn" class="p-4 rounded-3xl border border-orange-500 bg-orange-500/20">Load Mode</button><button onclick="selectMode('Build')" id="buildModeBtn" class="p-4 rounded-3xl border border-slate-700 bg-slate-950">Build Mode</button></div><button onclick="launchWorkspace()" class="orange-btn w-full text-lg py-4">Launch Workspace</button></div></section>
+<section id="workspacePage" class="hidden-page"><div class="flex flex-wrap gap-2 mb-3"><button onclick="goToDashboard()" class="small-btn">Dashboard</button><button onclick="openItemForm()" class="orange-btn">Add Item</button><button onclick="saveProject()" class="green-btn">Save Project</button></div><div class="panel"><h2 id="workspaceTitle" class="text-2xl font-bold mb-1">Workspace</h2><p id="workspaceInfo" class="text-slate-400"></p><p class="text-xs text-slate-500 mt-1">Blank space around the truck is staging space. Drag items off/on the truck.</p></div><div class="panel"><div class="workspace-canvas" id="workspaceCanvas"><div class="workspace-label">STAGING AREA AROUND TRUCK</div><div id="truckBed" class="truck-bed"><div class="wheel left"></div><div class="wheel right"></div></div></div></div><div class="mobile-layout"><div class="panel selected-panel"><h3 class="text-lg font-bold mb-2">Selected Item Controls</h3><p id="selectedActionInfo" class="text-slate-400 text-sm mb-3">Tap an item in the workspace to edit it here.</p><div class="grid grid-cols-2 gap-2"><button onclick="rotateSelectedItem()" class="small-btn">Rotate 90°</button><button onclick="editSelectedItem()" class="small-btn">Edit Size</button><button onclick="saveSelectedItem()" class="small-btn">Save Item</button><button onclick="deleteSelectedItem()" class="danger-btn">Delete</button></div><div class="mt-3"><label class="text-xs text-slate-400">Selected item color</label><input id="selectedColor" type="color" value="#f97316" class="w-full h-10 rounded-lg mt-1" onchange="changeSelectedColor(this.value)" /></div></div><div class="panel"><h3 id="centerAreaTitle" class="text-lg font-bold mb-2">Add / Staging Area</h3><p id="centerAreaText" class="text-xs text-slate-400 mb-3">Create items here. They appear in the blank staging space beside the truck.</p><div id="itemForm" class="stage-box hidden-page mb-3"><h4 class="font-bold mb-3">Custom Item</h4><input id="itemName" class="field" placeholder="Item Name" value="Dresser" /><input id="itemLength" type="number" class="field" placeholder="Length" value="60" /><input id="itemWidth" type="number" class="field" placeholder="Width" value="24" /><input id="itemHeight" type="number" class="field" placeholder="Height" value="36" /><input id="itemWeight" type="number" class="field" placeholder="Weight" value="80" /><label class="text-xs text-slate-400">Item Color</label><input id="itemColor" type="color" value="#f97316" class="w-full h-10 rounded-lg mt-1 mb-3" /><button onclick="createItemInWorkspace()" class="w-full bg-orange-500 hover:bg-orange-600 p-2 rounded-xl font-bold mb-2">Create In Staging Area</button><button onclick="closeItemForm()" class="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded-xl">Cancel</button></div><div id="stagePlaceholder" class="stage-box flex items-center justify-center text-center text-slate-500">Tap <strong class="text-orange-400 mx-1">Add Item</strong> to create a custom measured object.</div></div><div class="panel"><h3 class="text-lg font-bold mb-2">Saved Area</h3><p class="text-xs text-slate-400 mb-3">Saved items and reusable project pieces.</p><div class="stage-box"><h4 class="font-bold text-white mb-2">Saved Items</h4><div id="savedItemsList" class="space-y-2 text-slate-400 text-sm">No saved items yet.</div></div></div><div class="panel"><h3 class="text-lg font-bold mb-2">Categories / Details</h3><p class="text-xs text-slate-400 mb-3">Quick labels for now. Later this becomes materials, hardware, furniture, tools, etc.</p><button onclick="quickCategory('Furniture')" class="category-btn">Furniture</button><button onclick="quickCategory('Appliance')" class="category-btn">Appliance</button><button onclick="quickCategory('Tool Box')" class="category-btn">Tool Box</button><button onclick="quickCategory('Material')" class="category-btn">Material</button><button onclick="quickCategory('Custom Build')" class="category-btn">Custom Build</button><div id="selectedDetails" class="mt-3 bg-slate-950 p-4 rounded-2xl text-slate-300 text-sm"><h4 class="font-bold text-white mb-2">Selected Item</h4><p class="text-slate-500">Tap an item to see dimensions here.</p></div></div></div></section>
 </div>
-
-<div class="panel">
-<h2 class="font-bold text-xl mb-3">Truck Bed / Bird's-Eye View</h2>
-
-<div id="truckBed" class="truck-bed">
-<div class="wheel left"></div>
-<div class="wheel right"></div>
-</div>
-</div>
-
-<div class="panel">
-<h3 class="font-bold text-lg mb-2">Selected Item Controls</h3>
-<p id="selectedInfo" class="text-slate-400 mb-3">Tap an item to edit it.</p>
-
-<div class="grid grid-cols-2 gap-2">
-<button onclick="rotateSelectedItem()" class="small-btn">Rotate 90°</button>
-<button onclick="editSelectedItem()" class="small-btn">Edit Size</button>
-<button onclick="deleteSelectedItem()" class="small-btn bg-red-800">Delete</button>
-</div>
-</div>
-
-<div class="panel">
-<h3 class="font-bold text-lg mb-2">Staging Area</h3>
-
-<div id="itemForm" style="display:none;">
-<input id="itemName" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 mb-2" placeholder="Item Name" value="Furniture">
-<input id="itemLength" type="number" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 mb-2" placeholder="Length" value="60">
-<input id="itemWidth" type="number" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 mb-2" placeholder="Width" value="24">
-<input id="itemHeight" type="number" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 mb-2" placeholder="Height" value="36">
-
-<button onclick="createItem()" class="w-full bg-orange-500 p-2 rounded-xl">Create Item</button>
-</div>
-
-<div id="stagingArea" class="mt-3 text-slate-400">
-Tap Add Item to create an object.
-</div>
-</div>
-
 <script>
-let selectedItem = null;
-const scale = 2;
-
-function openItemForm(){
-    document.getElementById('itemForm').style.display='block';
-}
-
-function createItem(){
-    const item={
-        name:document.getElementById('itemName').value,
-        length:Number(document.getElementById('itemLength').value),
-        width:Number(document.getElementById('itemWidth').value),
-        height:Number(document.getElementById('itemHeight').value),
-        x:80,
-        y:80,
-        rotated:false
-    };
-
-    addItemBox(item);
-}
-
-function addItemBox(data){
-    const item=document.createElement('div');
-    item.className='item-box';
-
-    item.dataset.name=data.name;
-    item.dataset.length=data.length;
-    item.dataset.width=data.width;
-    item.dataset.height=data.height;
-    item.dataset.rotated=data.rotated;
-
-    updateItemSize(item);
-
-    item.style.left=data.x+'px';
-    item.style.top=data.y+'px';
-
-    item.innerHTML=data.name;
-
-    item.addEventListener('pointerdown',(e)=>{
-        selectItem(item);
-        startDrag(e,item);
-    });
-
-    document.getElementById('truckBed').appendChild(item);
-}
-
-function updateItemSize(item){
-    let length=Number(item.dataset.length);
-    let width=Number(item.dataset.width);
-
-    if(item.dataset.rotated==='true'){
-        [length,width]=[width,length];
-    }
-
-    item.style.width=(length/scale)+'px';
-    item.style.height=(width/scale)+'px';
-}
-
-function selectItem(item){
-    selectedItem=item;
-
-    document.getElementById('selectedInfo').innerHTML=`
-        <strong>${item.dataset.name}</strong><br>
-        ${item.dataset.length}" × ${item.dataset.width}" × ${item.dataset.height}"
-    `;
-}
-
-function rotateSelectedItem(){
-    if(!selectedItem)return;
-
-    selectedItem.dataset.rotated=selectedItem.dataset.rotated==='true'?'false':'true';
-    updateItemSize(selectedItem);
-}
-
-function editSelectedItem(){
-    if(!selectedItem)return;
-
-    const length=prompt('Length',selectedItem.dataset.length);
-    const width=prompt('Width',selectedItem.dataset.width);
-    const height=prompt('Height',selectedItem.dataset.height);
-
-    if(length)selectedItem.dataset.length=length;
-    if(width)selectedItem.dataset.width=width;
-    if(height)selectedItem.dataset.height=height;
-
-    updateItemSize(selectedItem);
-    selectItem(selectedItem);
-}
-
-function deleteSelectedItem(){
-    if(!selectedItem)return;
-
-    selectedItem.remove();
-    selectedItem=null;
-    document.getElementById('selectedInfo').innerHTML='Tap an item to edit it.';
-}
-
-function startDrag(e,item){
-    e.preventDefault();
-
-    const truck=document.getElementById('truckBed');
-    const truckRect=truck.getBoundingClientRect();
-
-    const rect=item.getBoundingClientRect();
-    const offsetX=e.clientX-rect.left;
-    const offsetY=e.clientY-rect.top;
-
-    function move(ev){
-        let x=ev.clientX-truckRect.left-offsetX;
-        let y=ev.clientY-truckRect.top-offsetY;
-
-        item.style.left=x+'px';
-        item.style.top=y+'px';
-
-        if(validPlacement(item,x,y)){
-            item.classList.add('valid-placement');
-            item.classList.remove('invalid-placement');
-        }else{
-            item.classList.add('invalid-placement');
-            item.classList.remove('valid-placement');
-        }
-    }
-
-    function up(){
-        item.classList.remove('valid-placement');
-        item.classList.remove('invalid-placement');
-
-        document.removeEventListener('pointermove',move);
-        document.removeEventListener('pointerup',up);
-    }
-
-    document.addEventListener('pointermove',move);
-    document.addEventListener('pointerup',up);
-}
-
-function validPlacement(item,x,y){
-    const truck=document.getElementById('truckBed');
-
-    if(x<0||y<0)return false;
-    if(x+item.offsetWidth>truck.clientWidth)return false;
-    if(y+item.offsetHeight>truck.clientHeight)return false;
-
-    return true;
-}
-
-function saveProject(){
-    alert('Project save system placeholder.');
-}
+let currentMode='Load';let selectedItem=null;let activeProjectId=null;let currentProjectMeta={name:'New Project',truck:'Ford F-150',mode:'Load',bedLength:78,bedWidth:50,wheelWellWidth:10,wheelWellHeight:36};
+function getProjects(){return JSON.parse(localStorage.getItem('loadlogicProjects')||'[]');}function setProjects(projects){localStorage.setItem('loadlogicProjects',JSON.stringify(projects));}function getSavedItems(){return JSON.parse(localStorage.getItem('loadlogicItems')||'[]');}function setSavedItems(items){localStorage.setItem('loadlogicItems',JSON.stringify(items));}
+function hideAllPages(){['loginPage','dashboardPage','setupPage','workspacePage'].forEach(id=>document.getElementById(id).classList.add('hidden-page'));}
+function goToDashboard(){hideAllPages();updateDashboard();document.getElementById('dashboardPage').classList.remove('hidden-page');}
+function goToSetup(){hideAllPages();document.getElementById('setupPage').classList.remove('hidden-page');}
+function selectMode(mode){currentMode=mode;document.getElementById('loadModeBtn').className='p-4 rounded-3xl border border-slate-700 bg-slate-950';document.getElementById('buildModeBtn').className='p-4 rounded-3xl border border-slate-700 bg-slate-950';document.getElementById(mode==='Load'?'loadModeBtn':'buildModeBtn').className='p-4 rounded-3xl border border-orange-500 bg-orange-500/20';}
+function launchWorkspace(){activeProjectId=Date.now();const projectName=document.getElementById('projectName').value||'New Project';const truckMake=document.getElementById('truckMake').value||'Truck';const truckModel=document.getElementById('truckModel').value||'Model';currentProjectMeta={name:projectName,truck:truckMake+' '+truckModel,mode:currentMode,bedLength:Number(document.getElementById('bedLength').value)||78,bedWidth:Number(document.getElementById('bedWidth').value)||50,wheelWellWidth:Number(document.getElementById('wheelWellWidth').value)||10,wheelWellHeight:Number(document.getElementById('wheelWellHeight').value)||36};clearWorkspaceItems();openWorkspaceScreen();}
+function openWorkspaceScreen(){hideAllPages();document.getElementById('workspacePage').classList.remove('hidden-page');document.getElementById('workspaceTitle').innerText=currentProjectMeta.name;document.getElementById('workspaceInfo').innerText=currentProjectMeta.truck+' • '+currentProjectMeta.mode+' Mode';document.getElementById('centerAreaTitle').innerText=currentProjectMeta.mode==='Build'?'Build / Staging Area':'Add / Staging Area';document.getElementById('centerAreaText').innerText=currentProjectMeta.mode==='Build'?'Assemble materials in staging space, then move builds into the truck zone.':'Create items here. They appear in the blank staging space beside the truck.';updateTruckScaling();renderSavedItems();}
+function updateTruckScaling(){const canvas=document.getElementById('workspaceCanvas');const truckBed=document.getElementById('truckBed');if(!canvas||!truckBed)return;const bedLength=currentProjectMeta.bedLength||78;const bedWidth=currentProjectMeta.bedWidth||50;const ratio=bedLength/bedWidth;const canvasWidth=canvas.clientWidth;const maxWidth=Math.min(430,canvasWidth-36);const bedDisplayWidth=maxWidth;const bedDisplayHeight=Math.max(280,Math.min(430,bedDisplayWidth/ratio));truckBed.style.width=bedDisplayWidth+'px';truckBed.style.height=bedDisplayHeight+'px';const pxPerInchW=truckBed.clientWidth/bedLength;const pxPerInchH=truckBed.clientHeight/bedWidth;const px=Math.min(pxPerInchW,pxPerInchH);document.querySelectorAll('.wheel').forEach(wheel=>{wheel.style.width=Math.max(14,(currentProjectMeta.wheelWellWidth||10)*px)+'px';wheel.style.height=Math.max(40,(currentProjectMeta.wheelWellHeight||36)*px)+'px';});resizeAllItemsFromData();}
+function getScale(){const truckBed=document.getElementById('truckBed');const bedLength=currentProjectMeta.bedLength||78;return truckBed.clientWidth/bedLength;}
+function openItemForm(){document.getElementById('itemForm').classList.remove('hidden-page');document.getElementById('stagePlaceholder').classList.add('hidden-page');}
+function closeItemForm(){document.getElementById('itemForm').classList.add('hidden-page');document.getElementById('stagePlaceholder').classList.remove('hidden-page');}
+function quickCategory(type){openItemForm();document.getElementById('itemName').value=type;}
+function createItemInWorkspace(){const truckBed=document.getElementById('truckBed');const data={id:Date.now(),name:document.getElementById('itemName').value||'Item',length:Number(document.getElementById('itemLength').value)||48,width:Number(document.getElementById('itemWidth').value)||24,height:Number(document.getElementById('itemHeight').value)||24,weight:Number(document.getElementById('itemWeight').value)||0,color:document.getElementById('itemColor').value||'#f97316',x:Math.max(12,truckBed.offsetLeft-90),y:Math.max(60,truckBed.offsetTop+20),rotated:false};addItemBox(data);closeItemForm();}
+function addItemBox(data){const canvas=document.getElementById('workspaceCanvas');const item=document.createElement('div');item.className='item-box';item.dataset.id=data.id||Date.now();item.dataset.name=data.name;item.dataset.length=data.length;item.dataset.width=data.width;item.dataset.height=data.height;item.dataset.weight=data.weight||0;item.dataset.color=data.color||'#f97316';item.dataset.rotated=data.rotated?'true':'false';item.style.left=(data.x||20)+'px';item.style.top=(data.y||80)+'px';item.style.background=item.dataset.color;item.innerHTML='<div>'+data.name+'</div>';setItemSize(item);item.addEventListener('pointerdown',e=>{selectItem(item);startDrag(e,item);});canvas.appendChild(item);selectItem(item);updateItemZoneClass(item);}
+function setItemSize(item){const s=getScale();const length=Number(item.dataset.length);const width=Number(item.dataset.width);const rotated=item.dataset.rotated==='true';const drawW=rotated?width:length;const drawH=rotated?length:width;item.style.width=Math.max(32,drawW*s)+'px';item.style.height=Math.max(24,drawH*s)+'px';}
+function resizeAllItemsFromData(){document.querySelectorAll('.item-box').forEach(item=>{setItemSize(item);updateItemZoneClass(item);});}
+function selectItem(item){selectedItem=item;updateSelectedPanels();}
+function updateSelectedPanels(){const details=document.getElementById('selectedDetails');const action=document.getElementById('selectedActionInfo');const colorInput=document.getElementById('selectedColor');if(!selectedItem){const empty='Tap an item in the workspace to edit it here.';if(action)action.innerHTML=empty;if(details)details.innerHTML='<h4 class="font-bold text-white mb-2">Selected Item</h4><p class="text-slate-500">Tap an item to see dimensions here.</p>';return;}const rotated=selectedItem.dataset.rotated==='true'?'Yes / 90°':'No';const zone=isMostlyInsideTruck(selectedItem)?'On truck':'Staging / Off truck';if(action){action.innerHTML='<strong class="text-white">'+selectedItem.dataset.name+'</strong><br>'+selectedItem.dataset.length+'" × '+selectedItem.dataset.width+'" × '+selectedItem.dataset.height+'" • '+selectedItem.dataset.weight+' lbs<br>'+zone+' • Rotated: '+rotated;}if(details){details.innerHTML='<h4 class="font-bold text-white mb-2">'+selectedItem.dataset.name+'</h4><p><strong>Length:</strong> '+selectedItem.dataset.length+'"</p><p><strong>Width:</strong> '+selectedItem.dataset.width+'"</p><p><strong>Height:</strong> '+selectedItem.dataset.height+'"</p><p><strong>Weight:</strong> '+selectedItem.dataset.weight+' lbs</p><p><strong>Color:</strong> '+selectedItem.dataset.color+'</p><p><strong>Zone:</strong> '+zone+'</p><p><strong>Rotated:</strong> '+rotated+'</p>';}if(colorInput)colorInput.value=selectedItem.dataset.color||'#f97316';}
+function changeSelectedColor(color){if(!selectedItem)return;selectedItem.dataset.color=color;selectedItem.style.background=color;updateSelectedPanels();}
+function rotateSelectedItem(){if(!selectedItem){alert('Tap an item first.');return;}selectedItem.dataset.rotated=selectedItem.dataset.rotated==='true'?'false':'true';setItemSize(selectedItem);updateItemZoneClass(selectedItem);updateSelectedPanels();}
+function editSelectedItem(){if(!selectedItem){alert('Tap an item first.');return;}const name=prompt('Item name:',selectedItem.dataset.name);if(name===null)return;const length=prompt('Length in inches:',selectedItem.dataset.length);if(length===null)return;const width=prompt('Width/depth in inches:',selectedItem.dataset.width);if(width===null)return;const height=prompt('Height in inches:',selectedItem.dataset.height);if(height===null)return;const weight=prompt('Weight in lbs:',selectedItem.dataset.weight);if(weight===null)return;selectedItem.dataset.name=name||'Item';selectedItem.dataset.length=Number(length)||1;selectedItem.dataset.width=Number(width)||1;selectedItem.dataset.height=Number(height)||1;selectedItem.dataset.weight=Number(weight)||0;selectedItem.innerHTML='<div>'+selectedItem.dataset.name+'</div>';setItemSize(selectedItem);updateItemZoneClass(selectedItem);updateSelectedPanels();}
+function deleteSelectedItem(){if(!selectedItem)return;selectedItem.remove();selectedItem=null;updateSelectedPanels();}
+function saveSelectedItem(){if(!selectedItem){alert('Tap an item first.');return;}const items=getSavedItems();items.push({id:Date.now(),name:selectedItem.dataset.name,length:Number(selectedItem.dataset.length),width:Number(selectedItem.dataset.width),height:Number(selectedItem.dataset.height),weight:Number(selectedItem.dataset.weight),color:selectedItem.dataset.color||'#f97316'});setSavedItems(items);renderSavedItems();updateDashboardCountsOnly();alert('Item saved.');}
+function renderSavedItems(){const list=document.getElementById('savedItemsList');if(!list)return;const items=getSavedItems();if(items.length===0){list.innerHTML='No saved items yet.';return;}list.innerHTML=items.map(item=>'<button onclick="loadSavedItem('+item.id+')" class="w-full text-left bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-700"><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:'+(item.color||'#f97316')+';border:1px solid white;margin-right:6px;"></span><strong>'+item.name+'</strong><br>'+item.length+'" × '+item.width+'" × '+item.height+'" • '+(item.weight||0)+' lbs</button>').join('');}
+function loadSavedItem(id){const saved=getSavedItems().find(i=>i.id===id);if(!saved)return;const truckBed=document.getElementById('truckBed');addItemBox({...saved,id:Date.now(),x:Math.max(12,truckBed.offsetLeft-90),y:Math.max(60,truckBed.offsetTop+20),rotated:false});}
+function saveProject(){const items=Array.from(document.querySelectorAll('#workspaceCanvas .item-box')).map(item=>({id:Number(item.dataset.id),name:item.dataset.name,length:Number(item.dataset.length),width:Number(item.dataset.width),height:Number(item.dataset.height),weight:Number(item.dataset.weight),color:item.dataset.color||'#f97316',x:parseFloat(item.style.left)||0,y:parseFloat(item.style.top)||0,rotated:item.dataset.rotated==='true'}));const project={id:activeProjectId||Date.now(),...currentProjectMeta,items,savedAt:new Date().toLocaleString()};const projects=getProjects();const index=projects.findIndex(p=>p.id===project.id);if(index>=0)projects[index]=project;else projects.push(project);activeProjectId=project.id;setProjects(projects);updateDashboardCountsOnly();alert('Project saved.');}
+function updateDashboardCountsOnly(){const pc=document.getElementById('projectCount');const ic=document.getElementById('itemCountDisplay');if(pc)pc.innerText=getProjects().length;if(ic)ic.innerText=getSavedItems().length;}
+function updateDashboard(){const projects=getProjects();const items=getSavedItems();document.getElementById('projectCount').innerText=projects.length;document.getElementById('itemCountDisplay').innerText=items.length;const list=document.getElementById('savedProjectsList');if(projects.length===0){list.innerHTML='No saved projects yet.';return;}list.innerHTML=projects.map(p=>'<button onclick="openSavedProject('+p.id+')" class="w-full text-left bg-slate-950 hover:bg-slate-800 p-3 rounded-xl border border-slate-700"><strong class="text-white">'+p.name+'</strong><br>'+p.truck+' • '+p.mode+' Mode<br><span class="text-xs">Saved: '+p.savedAt+'</span></button>').join('');}
+function openSavedProject(id){const project=getProjects().find(p=>p.id===id);if(!project)return;activeProjectId=project.id;currentProjectMeta={name:project.name,truck:project.truck,mode:project.mode,bedLength:project.bedLength||78,bedWidth:project.bedWidth||50,wheelWellWidth:project.wheelWellWidth||10,wheelWellHeight:project.wheelWellHeight||36};clearWorkspaceItems();openWorkspaceScreen();setTimeout(()=>{project.items.forEach(item=>addItemBox(item));},50);}
+function clearWorkspaceItems(){document.querySelectorAll('#workspaceCanvas .item-box').forEach(item=>item.remove());selectedItem=null;updateSelectedPanels();}
+function startDrag(e,item){e.preventDefault();document.body.classList.add('dragging-active');const canvas=document.getElementById('workspaceCanvas');const canvasRect=canvas.getBoundingClientRect();const itemRect=item.getBoundingClientRect();const offsetX=e.clientX-itemRect.left;const offsetY=e.clientY-itemRect.top;function move(ev){if(ev.cancelable)ev.preventDefault();let x=ev.clientX-canvasRect.left-offsetX;let y=ev.clientY-canvasRect.top-offsetY;x=Math.max(0,Math.min(x,canvas.clientWidth-item.offsetWidth));y=Math.max(0,Math.min(y,canvas.clientHeight-item.offsetHeight));item.style.left=x+'px';item.style.top=y+'px';const status=getPlacementStatus(item);item.classList.remove('valid-placement','invalid-placement','on-truck','off-truck');if(status.zone==='truck-valid'){item.classList.add('valid-placement','on-truck');}else if(status.zone==='truck-invalid'){item.classList.add('invalid-placement');}else{item.classList.add('off-truck');}updateSelectedPanels();}function up(){const status=getPlacementStatus(item);item.classList.remove('valid-placement','invalid-placement');if(status.zone==='truck-invalid'){alert('Invalid truck placement. Move it away from wheel wells, other items, or truck edges.');}updateItemZoneClass(item);document.body.classList.remove('dragging-active');document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);}document.addEventListener('pointermove',move,{passive:false});document.addEventListener('pointerup',up);}
+function updateItemZoneClass(item){item.classList.remove('on-truck','off-truck');const status=getPlacementStatus(item);if(status.zone==='truck-valid')item.classList.add('on-truck');else item.classList.add('off-truck');}
+function getItemRectInCanvas(item){const x=parseFloat(item.style.left)||0;const y=parseFloat(item.style.top)||0;return{left:x,top:y,right:x+item.offsetWidth,bottom:y+item.offsetHeight,width:item.offsetWidth,height:item.offsetHeight};}
+function getTruckRectInCanvas(){const truck=document.getElementById('truckBed');return{left:truck.offsetLeft,top:truck.offsetTop,right:truck.offsetLeft+truck.offsetWidth,bottom:truck.offsetTop+truck.offsetHeight,width:truck.offsetWidth,height:truck.offsetHeight};}
+function isMostlyInsideTruck(item){const itemRect=getItemRectInCanvas(item);const truckRect=getTruckRectInCanvas();const overlap=getOverlapRect(itemRect,truckRect);if(!overlap)return false;const overlapArea=overlap.width*overlap.height;const itemArea=itemRect.width*itemRect.height;return overlapArea>=itemArea*.5;}
+function getPlacementStatus(item){const itemRect=getItemRectInCanvas(item);const truckRect=getTruckRectInCanvas();const overlapTruck=getOverlapRect(itemRect,truckRect);if(!overlapTruck)return{zone:'staging'};if(itemRect.left<truckRect.left||itemRect.top<truckRect.top||itemRect.right>truckRect.right||itemRect.bottom>truckRect.bottom){return{zone:'truck-invalid',reason:'truck-edge'};}const items=Array.from(document.querySelectorAll('#workspaceCanvas .item-box')).filter(other=>other!==item);for(const other of items){const otherStatus=getPlacementStatusNoItemCollision(other);if(otherStatus.zone!=='staging'){if(rectsOverlap(itemRect,getItemRectInCanvas(other))){return{zone:'truck-invalid',reason:'item-overlap'};}}}const wheels=Array.from(document.querySelectorAll('#truckBed .wheel'));for(const wheel of wheels){const wheelRect={left:truckRect.left+wheel.offsetLeft,top:truckRect.top+wheel.offsetTop,right:truckRect.left+wheel.offsetLeft+wheel.offsetWidth,bottom:truckRect.top+wheel.offsetTop+wheel.offsetHeight};if(rectsOverlap(itemRect,wheelRect)){return{zone:'truck-invalid',reason:'wheel-well'};}}return{zone:'truck-valid'};}
+function getPlacementStatusNoItemCollision(item){const itemRect=getItemRectInCanvas(item);const truckRect=getTruckRectInCanvas();const overlapTruck=getOverlapRect(itemRect,truckRect);if(!overlapTruck)return{zone:'staging'};if(itemRect.left<truckRect.left||itemRect.top<truckRect.top||itemRect.right>truckRect.right||itemRect.bottom>truckRect.bottom){return{zone:'truck-invalid'};}return{zone:'truck-valid'};}
+function getOverlapRect(a,b){const left=Math.max(a.left,b.left);const top=Math.max(a.top,b.top);const right=Math.min(a.right,b.right);const bottom=Math.min(a.bottom,b.bottom);if(right<=left||bottom<=top)return null;return{left,top,right,bottom,width:right-left,height:bottom-top};}
+function rectsOverlap(a,b){return!(a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom);}
+window.addEventListener('resize',()=>{if(!document.getElementById('workspacePage').classList.contains('hidden-page'))updateTruckScaling();});
 </script>
-
 </body>
 </html>
