@@ -1,864 +1,280 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LoadLogic</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body {
-  background: #020617;
-  color: white;
-  font-family: Arial, sans-serif;
-  overscroll-behavior: none;
+body{
+    background:#020617;
+    color:white;
+    font-family:Arial,sans-serif;
+    margin:0;
+    padding:12px;
 }
-body.dragging-active {
-  overflow: hidden;
-  touch-action: none;
+.panel{
+    background:#0f172a;
+    border:1px solid #1e293b;
+    border-radius:20px;
+    padding:14px;
+    margin-bottom:14px;
 }
-.hidden-page { display: none; }
-.truck-bed {
-  position: relative;
-  width: 100%;
-  max-width: 430px;
-  height: 420px;
-  background: #1e293b;
-  border: 5px solid #475569;
-  border-radius: 22px;
-  margin: auto;
-  overflow: hidden;
+.truck-bed{
+    position:relative;
+    width:100%;
+    max-width:430px;
+    height:420px;
+    background:#1e293b;
+    border:5px solid #475569;
+    border-radius:22px;
+    margin:auto;
+    overflow:hidden;
 }
-.wheel {
-  position: absolute;
-  width: 36px;
-  height: 92px;
-  background: #020617;
-  border-radius: 12px;
-  top: 50%;
-  transform: translateY(-50%);
+.wheel{
+    position:absolute;
+    width:24px;
+    height:70px;
+    background:#020617;
+    border-radius:20px;
+    top:160px;
 }
-.wheel.left { left: 10px; }
-.wheel.right { right: 10px; }
-.item-box {
-  position: absolute;
-  background: #f97316;
-  border: 2px solid white;
-  border-radius: 12px;
-  cursor: grab;
-  touch-action: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-size: 12px;
-  font-weight: bold;
-  padding: 4px;
-  user-select: none;
-  overflow: hidden;
+.wheel.left{left:8px;}
+.wheel.right{right:8px;}
+.item-box{
+    position:absolute;
+    background:#f97316;
+    border:2px solid white;
+    border-radius:12px;
+    color:white;
+    font-size:12px;
+    font-weight:bold;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:4px;
+    cursor:grab;
+    touch-action:none;
 }
-.item-box.selected { outline: none; }
-.selection-popover {
-  position: fixed;
-  z-index: 9998;
-  background: #020617;
-  border: 2px solid #14b8a6;
-  border-radius: 16px;
-  padding: 10px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.45);
-  display: none;
-  min-width: 180px;
+.valid-placement{
+    outline:3px solid #22c55e;
 }
-.selection-popover.show { display: block; }
-.popover-btn {
-  width: 100%;
-  background: #334155;
-  padding: 8px;
-  border-radius: 10px;
-  margin-top: 6px;
-  font-size: 13px;
+.invalid-placement{
+    outline:3px solid #ef4444;
 }
-.popover-btn:hover { background: #475569; }
-.popover-danger { background: #991b1b; }
-.popover-danger:hover { background: #b91c1c; }
-.item-box .item-controls { display: none; }
-.item-box.selected .item-controls { display: none; }
-.item-box.valid-placement { outline: 4px solid #22c55e; }
-.item-box.invalid-placement { outline: 4px solid #ef4444; }
-.staging-item {
-  background: #f97316;
-  border: 2px solid white;
-  border-radius: 12px;
-  padding: 12px;
-  font-weight: bold;
-  text-align: center;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
+.small-btn{
+    background:#334155;
+    padding:10px;
+    border-radius:10px;
+    font-size:13px;
 }
-.panel {
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 22px;
-  padding: 14px;
+.small-btn:hover{
+    background:#475569;
 }
-.stage-box {
-  min-height: 160px;
-  background: #020617;
-  border: 2px dashed #475569;
-  border-radius: 18px;
-  padding: 12px;
+input{
+    color:white;
 }
-.small-btn {
-  background: #334155;
-  padding: 8px 10px;
-  border-radius: 12px;
-  font-size: 14px;
-}
-.small-btn:hover { background: #475569; }
-.orange-btn {
-  background: #f97316;
-  padding: 8px 10px;
-  border-radius: 12px;
-  font-weight: bold;
-  font-size: 14px;
-}
-.green-btn {
-  background: #16a34a;
-  padding: 8px 10px;
-  border-radius: 12px;
-  font-weight: bold;
-  font-size: 14px;
-}
-.category-btn {
-  width: 100%;
-  text-align: left;
-  background: #020617;
-  border: 1px solid #334155;
-  padding: 10px;
-  border-radius: 14px;
-  margin-bottom: 8px;
-}
-.category-btn:hover { background: #1e293b; }
 </style>
 </head>
-<body class="p-3">
-<div class="max-w-6xl mx-auto">
-<h1 class="text-3xl font-black text-orange-400 mb-1">LoadLogic</h1>
-<p class="text-slate-400 mb-4">Truck Bed Planning Simulator</p><!-- LOGIN PAGE --><div id="loginPage">
-  <div class="max-w-md mx-auto bg-slate-900 rounded-3xl p-6 border border-slate-700">
-    <h2 class="text-2xl font-bold mb-4">Login</h2>
-    <input id="username" type="text" value="Bird" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-4" />
-    <button onclick="goToDashboard()" class="w-full bg-orange-500 hover:bg-orange-600 p-3 rounded-xl font-bold">Continue</button>
-  </div>
-</div><!-- DASHBOARD PAGE --><div id="dashboardPage" class="hidden-page">
-  <div class="panel mb-4">
-    <h2 class="text-2xl font-bold">Dashboard</h2>
-    <p class="text-slate-400">Start new projects or reopen saved local projects.</p>
-  </div>  <div class="grid grid-cols-3 gap-3 mb-4">
-    <div class="panel"><p class="text-slate-400 text-sm">Projects</p><p id="projectCount" class="text-orange-400 text-2xl font-bold">0</p></div>
-    <div class="panel"><p class="text-slate-400 text-sm">Builds</p><p class="text-orange-400 text-2xl font-bold">0</p></div>
-    <div class="panel"><p class="text-slate-400 text-sm">Items</p><p id="itemCountDisplay" class="text-orange-400 text-2xl font-bold">0</p></div>
-  </div><button onclick="goToSetup()" class="orange-btn mb-4">Start New Project</button>
+<body>
 
-  <div class="panel">
-    <h3 class="text-xl font-bold mb-3">Saved Projects</h3>
-    <div id="savedProjectsList" class="space-y-3 text-slate-400">No saved projects yet.</div>
-  </div>
-</div><!-- SETUP PAGE --><div id="setupPage" class="hidden-page">
-  <button onclick="goToDashboard()" class="small-btn mb-4">Back</button>
-  <div class="panel">
-    <h2 class="text-3xl font-bold mb-6">New Project Setup</h2>
-    <input id="projectName" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-3" value="New Project" />
-    <input id="truckMake" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-3" value="Ford" />
-    <input id="truckModel" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 mb-3" value="F-150" /><div class="grid grid-cols-2 gap-3 mb-4">
-  <input id="bedLength" type="number" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700" placeholder="Bed Length (in)" value="78" />
-  <input id="bedWidth" type="number" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700" placeholder="Bed Width (in)" value="50" />
-</div><div class="grid grid-cols-2 gap-3 mb-4">
-  <input id="wheelWellWidth" type="number" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700" placeholder="Wheel Well Width" value="10" />
-  <input id="wheelWellHeight" type="number" class="w-full p-3 rounded-xl bg-slate-950 border border-slate-700" placeholder="Wheel Well Height" value="36" />
-</div><div class="grid grid-cols-2 gap-3 mb-4">
-  <button onclick="selectMode('Load')" id="loadModeBtn" class="p-4 rounded-3xl border border-orange-500 bg-orange-500/20">Load Mode</button>
-  <button onclick="selectMode('Build')" id="buildModeBtn" class="p-4 rounded-3xl border border-slate-700 bg-slate-950">Build Mode</button>
+<h1 class="text-3xl font-bold text-orange-400">LoadLogic</h1>
+<p class="text-slate-400 mb-3">Truck Bed Planning Simulator</p>
+
+<div class="flex gap-2 mb-3 flex-wrap">
+<button onclick="openItemForm()" class="bg-orange-500 px-3 py-2 rounded-xl">Add Item</button>
+<button onclick="rotateSelectedItem()" class="bg-slate-700 px-3 py-2 rounded-xl">Rotate</button>
+<button onclick="saveProject()" class="bg-green-600 px-3 py-2 rounded-xl">Save Project</button>
 </div>
 
-<button onclick="launchWorkspace()" class="w-full bg-orange-500 hover:bg-orange-600 p-4 rounded-xl font-bold">Launch Workspace</button>
-
-  </div>
-</div><!-- WORKSPACE PAGE --><div id="selectionPopover" class="selection-popover">
-  <div class="text-sm font-bold text-white mb-1" id="popoverItemName">Selected Item</div>
-  <div class="text-xs text-slate-400 mb-2" id="popoverItemSize">--</div>
-  <button onclick="rotateSelectedItem()" class="popover-btn">Rotate 90°</button>
-  <button onclick="openResizePrompt()" class="popover-btn">Resize / Edit Dimensions</button>
-  <button onclick="saveSelectedItem()" class="popover-btn">Save Item</button>
-  <button onclick="deleteSelectedItem()" class="popover-btn popover-danger">Delete Item</button>
-</div><div id="workspacePage" class="hidden-page">
-  <div class="flex flex-wrap gap-2 mb-3">
-    <button onclick="goToDashboard()" class="small-btn">Dashboard</button>
-    <button onclick="openItemForm()" class="orange-btn">Add Item</button>
-    <button onclick="rotateSelectedItem()" class="small-btn">Rotate</button>
-    <button onclick="saveSelectedItem()" class="small-btn">Save Item</button>
-    <button onclick="saveProject()" class="green-btn">Save Project</button>
-  </div>  <div class="panel mb-3">
-    <h2 id="workspaceTitle" class="text-2xl font-bold mb-1">Workspace</h2>
-    <p id="workspaceInfo" class="text-slate-400"></p>
-  </div>  <!-- TOP TRUCK AREA -->  <div class="panel mb-3">
-    <div class="flex items-center justify-between gap-2 mb-2">
-      <h3 class="text-xl font-bold">Truck Bed / Bird's-Eye View</h3>
-      <span class="text-xs bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full">2D Mode</span>
-    </div>
-    <div id="truckBed" class="truck-bed">
-      <div class="wheel left"></div>
-      <div class="wheel right"></div>
-    </div>
-  </div>  <!-- SKETCH STYLE LOWER LAYOUT -->  <div class="mobile-layout"><!-- SAVED AREA LEFT -->
 <div class="panel">
-  <h3 class="text-lg font-bold mb-2">Saved Area</h3>
-  <p class="text-xs text-slate-400 mb-3">Saved items, saved builds, and reusable project pieces.</p>
+<h2 class="font-bold text-xl mb-3">Truck Bed / Bird's-Eye View</h2>
 
-  <div class="grid grid-cols-2 gap-2 mb-3">
-    <button class="small-btn">Items</button>
-    <button class="small-btn">Builds</button>
-  </div>
-
-  <div class="stage-box">
-    <h4 class="font-bold text-white mb-2">Saved Items</h4>
-    <div id="savedItemsList" class="space-y-2 text-slate-400 text-sm">No saved items yet.</div>
-  </div>
+<div id="truckBed" class="truck-bed">
+<div class="wheel left"></div>
+<div class="wheel right"></div>
+</div>
 </div>
 
-<!-- BUILD / STAGING AREA CENTER -->
 <div class="panel">
-  <h3 id="centerAreaTitle" class="text-lg font-bold mb-2">Staging Area</h3>
-  <p id="centerAreaText" class="text-xs text-slate-400 mb-3">Create or edit an item here, then place it in the truck bed.</p>
+<h3 class="font-bold text-lg mb-2">Selected Item Controls</h3>
+<p id="selectedInfo" class="text-slate-400 mb-3">Tap an item to edit it.</p>
 
-  <div id="itemForm" class="stage-box hidden-page mb-3">
-    <h4 class="font-bold mb-3">Custom Item</h4>
-    <input id="itemName" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Item Name" value="Dresser" />
-    <input id="itemLength" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Length" value="60" />
-    <input id="itemWidth" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Width" value="24" />
-    <input id="itemHeight" type="number" class="w-full mb-2 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Height" value="36" />
-    <input id="itemWeight" type="number" class="w-full mb-3 p-2 rounded-lg bg-slate-900 border border-slate-700" placeholder="Weight" value="80" />
-    <button onclick="createStagingItem()" class="w-full bg-orange-500 hover:bg-orange-600 p-2 rounded-xl font-bold mb-2">Create Item In Staging</button>
-    <button onclick="closeItemForm()" class="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded-xl">Cancel</button>
-  </div>
-
-  <div id="stagePlaceholder" class="stage-box flex items-center justify-center text-center text-slate-500">
-    Tap <strong class="text-orange-400 mx-1">Add Item</strong> to create a custom measured object.
-  </div>
-
-  <div id="stagingPreview" class="stage-box hidden-page"></div>
+<div class="grid grid-cols-2 gap-2">
+<button onclick="rotateSelectedItem()" class="small-btn">Rotate 90°</button>
+<button onclick="editSelectedItem()" class="small-btn">Edit Size</button>
+<button onclick="deleteSelectedItem()" class="small-btn bg-red-800">Delete</button>
+</div>
 </div>
 
-<!-- CATEGORY / DETAILS RIGHT -->
 <div class="panel">
-  <h3 class="text-lg font-bold mb-2">Categories / Details</h3>
-  <p class="text-xs text-slate-400 mb-3">Choose item types now. Later this becomes furniture, tools, hardware, materials, etc.</p>
+<h3 class="font-bold text-lg mb-2">Staging Area</h3>
 
-  <button onclick="quickCategory('Furniture')" class="category-btn">Furniture</button>
-  <button onclick="quickCategory('Appliance')" class="category-btn">Appliance</button>
-  <button onclick="quickCategory('Tool Box')" class="category-btn">Tool Box</button>
-  <button onclick="quickCategory('Material')" class="category-btn">Material</button>
-  <button onclick="quickCategory('Custom Build')" class="category-btn">Custom Build</button>
+<div id="itemForm" style="display:none;">
+<input id="itemName" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 mb-2" placeholder="Item Name" value="Furniture">
+<input id="itemLength" type="number" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 mb-2" placeholder="Length" value="60">
+<input id="itemWidth" type="number" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 mb-2" placeholder="Width" value="24">
+<input id="itemHeight" type="number" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 mb-2" placeholder="Height" value="36">
 
-  <div id="selectedDetails" class="mt-3 bg-slate-950 p-4 rounded-2xl text-slate-300 text-sm">
-    <h4 class="font-bold text-white mb-2">Selected Item</h4>
-    <p class="text-slate-500">Tap an item to see dimensions here.</p>
-  </div>
+<button onclick="createItem()" class="w-full bg-orange-500 p-2 rounded-xl">Create Item</button>
+</div>
 
+<div id="stagingArea" class="mt-3 text-slate-400">
+Tap Add Item to create an object.
 </div>
 </div>
-</div><style>
-.mobile-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 
-@media (min-width: 900px) {
-  .mobile-layout {
-    display: grid;
-    grid-template-columns: 1fr 1.35fr 0.9fr;
-  }
-
-  .truck-bed {
-    max-width: 760px;
-    height: 320px;
-  }
-}
-</style></div><script>
-let currentMode = 'Load';
+<script>
 let selectedItem = null;
-let activeProjectId = null;
-let currentProjectMeta = { name: 'New Project', truck: 'Ford F-150', mode: 'Load' };
-const scale = 1.35;
+const scale = 2;
 
-function getProjects() { return JSON.parse(localStorage.getItem('loadlogicProjects') || '[]'); }
-function setProjects(projects) { localStorage.setItem('loadlogicProjects', JSON.stringify(projects)); }
-function getSavedItems() { return JSON.parse(localStorage.getItem('loadlogicItems') || '[]'); }
-function setSavedItems(items) { localStorage.setItem('loadlogicItems', JSON.stringify(items)); }
-
-function hideAllPages() {
-  ['loginPage','dashboardPage','setupPage','workspacePage'].forEach(id => document.getElementById(id).classList.add('hidden-page'));
+function openItemForm(){
+    document.getElementById('itemForm').style.display='block';
 }
 
-function goToDashboard() {
-  hideAllPages();
-  updateDashboard();
-  document.getElementById('dashboardPage').classList.remove('hidden-page');
-}
-
-function goToSetup() {
-  hideAllPages();
-  document.getElementById('setupPage').classList.remove('hidden-page');
-}
-
-function selectMode(mode) {
-  currentMode = mode;
-  document.getElementById('loadModeBtn').className = 'p-4 rounded-3xl border border-slate-700 bg-slate-950';
-  document.getElementById('buildModeBtn').className = 'p-4 rounded-3xl border border-slate-700 bg-slate-950';
-  document.getElementById(mode === 'Load' ? 'loadModeBtn' : 'buildModeBtn').className = 'p-4 rounded-3xl border border-orange-500 bg-orange-500/20';
-}
-
-function launchWorkspace() {
-  activeProjectId = Date.now();
-  const projectName = document.getElementById('projectName').value || 'New Project';
-  const truckMake = document.getElementById('truckMake').value || 'Truck';
-  const truckModel = document.getElementById('truckModel').value || 'Model';
-  currentProjectMeta = {
-  name: projectName,
-  truck: truckMake + ' ' + truckModel,
-  mode: currentMode,
-  bedLength: Number(document.getElementById('bedLength').value) || 78,
-  bedWidth: Number(document.getElementById('bedWidth').value) || 50,
-  wheelWellWidth: Number(document.getElementById('wheelWellWidth').value) || 10,
-  wheelWellHeight: Number(document.getElementById('wheelWellHeight').value) || 36
-};
-
-updateTruckScaling();
-  clearTruckBedItems();
-  openWorkspaceScreen();
-}
-
-function updateTruckScaling() {
-  const truckBed = document.getElementById('truckBed');
-  if (!truckBed) return;
-
-  const bedLength = currentProjectMeta.bedLength || 78;
-  const bedWidth = currentProjectMeta.bedWidth || 50;
-
-  const ratio = bedLength / bedWidth;
-
-  let displayHeight = window.innerWidth < 700 ? 420 : 320;
-  let displayWidth = displayHeight / ratio;
-
-  displayWidth = Math.max(240, Math.min(displayWidth * 3.6, 760));
-
-  truckBed.style.width = displayWidth + 'px';
-
-  const wheelWidth = (currentProjectMeta.wheelWellWidth || 10) * scale;
-  const wheelHeight = (currentProjectMeta.wheelWellHeight || 36) * scale;
-
-  const wheels = document.querySelectorAll('.wheel');
-  wheels.forEach(wheel => {
-    wheel.style.width = wheelWidth + 'px';
-    wheel.style.height = wheelHeight + 'px';
-  });
-}
-
-function openWorkspaceScreen() {
-  hideAllPages();
-  document.getElementById('workspacePage').classList.remove('hidden-page');
-  document.getElementById('workspaceTitle').innerText = currentProjectMeta.name;
-  document.getElementById('workspaceInfo').innerText = currentProjectMeta.truck + ' • ' + currentProjectMeta.mode + ' Mode';
-  document.getElementById('centerAreaTitle').innerText = currentProjectMeta.mode === 'Build' ? 'Build Area' : 'Staging Area';
-  document.getElementById('centerAreaText').innerText = currentProjectMeta.mode === 'Build'
-    ? 'Assemble frames, drawers, racks, and materials here before placing them in the truck.'
-    : 'Create or edit an item here, then place it in the truck bed.';
-  renderSavedItems();
-}
-
-function openItemForm() {
-  document.getElementById('itemForm').classList.remove('hidden-page');
-  document.getElementById('stagePlaceholder').classList.add('hidden-page');
-}
-
-function closeItemForm() {
-  document.getElementById('itemForm').classList.add('hidden-page');
-  document.getElementById('stagePlaceholder').classList.remove('hidden-page');
-}
-
-function quickCategory(type) {
-  openItemForm();
-  document.getElementById('itemName').value = type;
-}
-
-function createCustomItem() {
-  createStagingItem();
-}
-
-function createStagingItem() {
-  const data = {
-    name: document.getElementById('itemName').value || 'Item',
-    length: Number(document.getElementById('itemLength').value) || 48,
-    width: Number(document.getElementById('itemWidth').value) || 24,
-    height: Number(document.getElementById('itemHeight').value) || 24,
-    weight: Number(document.getElementById('itemWeight').value) || 0,
-    x: 80,
-    y: 80,
-    rotated: false
-  };
-
-  closeItemForm();
-
-  const staging = document.getElementById('stagingPreview');
-  const placeholder = document.getElementById('stagePlaceholder');
-  staging.classList.remove('hidden-page');
-  placeholder.classList.add('hidden-page');
-
-  staging.innerHTML = `
-    <p class="text-xs text-slate-400 mb-2">Drag this into the truck bed:</p>
-    <div id="stagingItem" class="staging-item">
-      ${data.name}<br>
-      <span class="text-xs font-normal">${data.length}" × ${data.width}" × ${data.height}"</span>
-    </div>
-  `;
-
-  const stagingItem = document.getElementById('stagingItem');
-  stagingItem.dataset.itemData = JSON.stringify(data);
-  stagingItem.addEventListener('pointerdown', function(e) {
-    startStagingDrag(e, stagingItem);
-  });
-}
-
-function addItemBox(data) {
-  const truckBed = document.getElementById('truckBed');
-  const item = document.createElement('div');
-  item.classList.add('item-box');
-  item.style.left = (data.x || 80) + 'px';
-  item.style.top = (data.y || 80) + 'px';
-  item.dataset.name = data.name;
-  item.dataset.length = data.length;
-  item.dataset.width = data.width;
-  item.dataset.height = data.height;
-  item.dataset.weight = data.weight;
-  item.dataset.rotated = data.rotated ? 'true' : 'false';
-  item.innerHTML = buildItemInnerHTML(data.name);
-  setItemSize(item);
-  wireItemControls(item);
-  item.addEventListener('pointerdown', function(e) {
-    if (e.target.closest('.resize-handle') || e.target.closest('.rotate-handle')) return;
-    selectItem(item);
-    startDrag(e, item);
-  });
-  truckBed.appendChild(item);
-  selectItem(item);
-}
-
-function buildItemInnerHTML(name) {
-  return `
-    <div>${name}</div>
-    <div class="item-controls">
-      <div class="rotate-handle">↻</div>
-      <div class="resize-handle tl"></div>
-      <div class="resize-handle tr"></div>
-      <div class="resize-handle bl"></div>
-      <div class="resize-handle br"></div>
-    </div>
-  `;
-}
-
-function wireItemControls(item) {
-  const rotateHandle = item.querySelector('.rotate-handle');
-  if (rotateHandle) {
-    rotateHandle.addEventListener('pointerdown', function(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      selectItem(item);
-      rotateSelectedItem();
-    });
-  }
-
-  item.querySelectorAll('.resize-handle').forEach(handle => {
-    handle.addEventListener('pointerdown', function(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      selectItem(item);
-      startResize(e, item, handle);
-    });
-  });
-}
-
-function setItemSize(item) {
-  const length = Number(item.dataset.length);
-  const width = Number(item.dataset.width);
-  const rotated = item.dataset.rotated === 'true';
-  item.style.width = Math.max(40, (rotated ? width : length) * scale) + 'px';
-  item.style.height = Math.max(30, (rotated ? length : width) * scale) + 'px';
-}
-
-function selectItem(item) {
-  document.querySelectorAll('.item-box').forEach(box => box.classList.remove('selected'));
-  selectedItem = item;
-  item.classList.add('selected');
-  updateSelectedDetails();
-  showSelectionPopover(item);
-}
-
-function showSelectionPopover(item) {
-  const popover = document.getElementById('selectionPopover');
-  if (!popover || !item) return;
-
-  const rect = item.getBoundingClientRect();
-  const left = Math.min(window.innerWidth - 200, Math.max(8, rect.left));
-  const top = Math.max(8, rect.top - 120);
-
-  document.getElementById('popoverItemName').innerText = item.dataset.name;
-  document.getElementById('popoverItemSize').innerText = `${item.dataset.length}" × ${item.dataset.width}" × ${item.dataset.height}"`;
-
-  popover.style.left = left + 'px';
-  popover.style.top = top + 'px';
-  popover.classList.add('show');
-}
-
-function hideSelectionPopover() {
-  const popover = document.getElementById('selectionPopover');
-  if (popover) popover.classList.remove('show');
-}
-
-function updateSelectedDetails() {
-  const panel = document.getElementById('selectedDetails');
-  if (!selectedItem) {
-    panel.innerHTML = '<h4 class="font-bold text-white mb-2">Selected Item</h4><p class="text-slate-500">Tap an item to see dimensions here.</p>';
-    return;
-  }
-  const rotated = selectedItem.dataset.rotated === 'true' ? 'Yes / 90°' : 'No';
-  panel.innerHTML = `
-    <h4 class="font-bold text-white mb-2">${selectedItem.dataset.name}</h4>
-    <p><strong>Length:</strong> ${selectedItem.dataset.length}"</p>
-    <p><strong>Width:</strong> ${selectedItem.dataset.width}"</p>
-    <p><strong>Height:</strong> ${selectedItem.dataset.height}"</p>
-    <p><strong>Weight:</strong> ${selectedItem.dataset.weight} lbs</p>
-    <p><strong>Rotated:</strong> ${rotated}</p>
-  `;
-}
-
-function rotateSelectedItem() {
-  if (!selectedItem) { alert('Tap an item first.'); return; }
-  selectedItem.dataset.rotated = selectedItem.dataset.rotated === 'true' ? 'false' : 'true';
-  setItemSize(selectedItem);
-  keepItemInsideTruck(selectedItem);
-  updateSelectedDetails();
-  showSelectionPopover(selectedItem);
-}
-
-function openResizePrompt() {
-  if (!selectedItem) { alert('Tap an item first.'); return; }
-
-  const name = prompt('Item name:', selectedItem.dataset.name);
-  if (name === null) return;
-
-  const length = prompt('Length in inches:', selectedItem.dataset.length);
-  if (length === null) return;
-
-  const width = prompt('Width/depth in inches:', selectedItem.dataset.width);
-  if (width === null) return;
-
-  const height = prompt('Height in inches:', selectedItem.dataset.height);
-  if (height === null) return;
-
-  const weight = prompt('Weight in lbs:', selectedItem.dataset.weight);
-  if (weight === null) return;
-
-  selectedItem.dataset.name = name || 'Item';
-  selectedItem.dataset.length = Number(length) || 1;
-  selectedItem.dataset.width = Number(width) || 1;
-  selectedItem.dataset.height = Number(height) || 1;
-  selectedItem.dataset.weight = Number(weight) || 0;
-  selectedItem.innerHTML = buildItemInnerHTML(selectedItem.dataset.name);
-  wireItemControls(selectedItem);
-  setItemSize(selectedItem);
-  keepItemInsideTruck(selectedItem);
-  updateSelectedDetails();
-  showSelectionPopover(selectedItem);
-}
-
-function deleteSelectedItem() {
-  if (!selectedItem) return;
-  selectedItem.remove();
-  selectedItem = null;
-  hideSelectionPopover();
-  updateSelectedDetails();
-}
-
-function startResize(e, item, handle) {
-  // Resize handles are paused for this prototype version.
-  // Exact resizing now uses the popup editor so dimensions stay accurate.
-  openResizePrompt();
-}
-
-function updateItemDimensionsFromPixels(item) {
-  const rotated = item.dataset.rotated === 'true';
-  const visualWidthInches = Math.round(item.offsetWidth / scale);
-  const visualHeightInches = Math.round(item.offsetHeight / scale);
-
-  if (rotated) {
-    item.dataset.width = visualWidthInches;
-    item.dataset.length = visualHeightInches;
-  } else {
-    item.dataset.length = visualWidthInches;
-    item.dataset.width = visualHeightInches;
-  }
-}
-
-function saveSelectedItem() {
-  if (!selectedItem) { alert('Tap an item first.'); return; }
-  const items = getSavedItems();
-  items.push({
-    id: Date.now(),
-    name: selectedItem.dataset.name,
-    length: Number(selectedItem.dataset.length),
-    width: Number(selectedItem.dataset.width),
-    height: Number(selectedItem.dataset.height),
-    weight: Number(selectedItem.dataset.weight)
-  });
-  setSavedItems(items);
-  renderSavedItems();
-  alert('Item saved.');
-}
-
-function renderSavedItems() {
-  const list = document.getElementById('savedItemsList');
-  if (!list) return;
-  const items = getSavedItems();
-  if (items.length === 0) {
-    list.innerHTML = 'No saved items yet.';
-    return;
-  }
-  list.innerHTML = items.map(item => `
-    <button onclick="loadSavedItem(${item.id})" class="w-full text-left bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-700">
-      <strong>${item.name}</strong><br>${item.length}" × ${item.width}" × ${item.height}" • ${item.weight} lbs
-    </button>
-  `).join('');
-}
-
-function loadSavedItem(id) {
-  const item = getSavedItems().find(i => i.id === id);
-  if (!item) return;
-  addItemBox({ ...item, x: 80, y: 80, rotated: false });
-}
-
-function saveProject() {
-  const items = Array.from(document.querySelectorAll('.item-box')).map(item => ({
-    name: item.dataset.name,
-    length: Number(item.dataset.length),
-    width: Number(item.dataset.width),
-    height: Number(item.dataset.height),
-    weight: Number(item.dataset.weight),
-    x: parseFloat(item.style.left) || 0,
-    y: parseFloat(item.style.top) || 0,
-    rotated: item.dataset.rotated === 'true'
-  }));
-  const projects = getProjects();
-  const project = { id: activeProjectId || Date.now(), ...currentProjectMeta, items, savedAt: new Date().toLocaleString() };
-  const index = projects.findIndex(p => p.id === project.id);
-  if (index >= 0) projects[index] = project;
-  else projects.push(project);
-  activeProjectId = project.id;
-  setProjects(projects);
-  alert('Project saved.');
-}
-
-function updateDashboard() {
-  const projects = getProjects();
-  const items = getSavedItems();
-  document.getElementById('projectCount').innerText = projects.length;
-  document.getElementById('itemCountDisplay').innerText = items.length;
-  const list = document.getElementById('savedProjectsList');
-  if (projects.length === 0) {
-    list.innerHTML = 'No saved projects yet.';
-    return;
-  }
-  list.innerHTML = projects.map(p => `
-    <button onclick="openSavedProject(${p.id})" class="w-full text-left bg-slate-950 hover:bg-slate-800 p-3 rounded-xl border border-slate-700">
-      <strong class="text-white">${p.name}</strong><br>${p.truck} • ${p.mode} Mode<br><span class="text-xs">Saved: ${p.savedAt}</span>
-    </button>
-  `).join('');
-}
-
-function openSavedProject(id) {
-  const project = getProjects().find(p => p.id === id);
-  if (!project) return;
-  activeProjectId = project.id;
-  currentProjectMeta = { name: project.name, truck: project.truck, mode: project.mode };
-  clearTruckBedItems();
-  openWorkspaceScreen();
-  project.items.forEach(item => addItemBox(item));
-}
-
-function clearTruckBedItems() {
-  document.querySelectorAll('.item-box').forEach(item => item.remove());
-  selectedItem = null;
-  hideSelectionPopover();
-  const panel = document.getElementById('selectedDetails');
-  if (panel) panel.innerHTML = '<h4 class="font-bold text-white mb-2">Selected Item</h4><p class="text-slate-500">Tap an item to see dimensions here.</p>';
-}
-
-function keepItemInsideTruck(item) {
-  const truckRect = document.getElementById('truckBed').getBoundingClientRect();
-  let x = parseFloat(item.style.left) || 0;
-  let y = parseFloat(item.style.top) || 0;
-  x = Math.max(0, Math.min(x, truckRect.width - item.offsetWidth));
-  y = Math.max(0, Math.min(y, truckRect.height - item.offsetHeight));
-  item.style.left = x + 'px';
-  item.style.top = y + 'px';
-}
-
-function startStagingDrag(e, stagingItem) {
-  if (e.cancelable) e.preventDefault();
-  document.body.classList.add('dragging-active');
-
-  const data = JSON.parse(stagingItem.dataset.itemData);
-  const truckBed = document.getElementById('truckBed');
-  const truckRect = truckBed.getBoundingClientRect();
-
-  const ghost = document.createElement('div');
-  ghost.classList.add('item-box');
-  ghost.style.position = 'fixed';
-  ghost.style.zIndex = '9999';
-  ghost.dataset.name = data.name;
-  ghost.dataset.length = data.length;
-  ghost.dataset.width = data.width;
-  ghost.dataset.height = data.height;
-  ghost.dataset.weight = data.weight;
-  ghost.dataset.rotated = 'false';
-  ghost.innerHTML = `<div>${data.name}</div>`;
-  document.body.appendChild(ghost);
-  setItemSize(ghost);
-
-  function move(ev) {
-    if (ev.cancelable) ev.preventDefault();
-    ghost.style.left = (ev.clientX - ghost.offsetWidth / 2) + 'px';
-    ghost.style.top = (ev.clientY - ghost.offsetHeight / 2) + 'px';
-
-    const tempX = ev.clientX - truckRect.left - ghost.offsetWidth / 2;
-    const tempY = ev.clientY - truckRect.top - ghost.offsetHeight / 2;
-    ghost.dataset.tempX = tempX;
-    ghost.dataset.tempY = tempY;
-
-    if (isPlacementValid(ghost, tempX, tempY, true)) {
-      ghost.classList.remove('invalid-placement');
-      ghost.classList.add('valid-placement');
-    } else {
-      ghost.classList.remove('valid-placement');
-      ghost.classList.add('invalid-placement');
-    }
-  }
-
-  function up(ev) {
-    const x = Number(ghost.dataset.tempX);
-    const y = Number(ghost.dataset.tempY);
-
-    if (isPlacementValid(ghost, x, y, true)) {
-      addItemBox({ ...data, x, y, rotated: false });
-    } else {
-      alert('That item cannot be placed there. It overlaps something or is outside the truck bed.');
-    }
-
-    ghost.remove();
-    document.body.classList.remove('dragging-active');
-    document.removeEventListener('pointermove', move);
-    document.removeEventListener('pointerup', up);
-  }
-
-  document.addEventListener('pointermove', move, { passive: false });
-  document.addEventListener('pointerup', up);
-}
-
-function startDrag(e, element) {
-  if (e.cancelable) e.preventDefault();
-  document.body.classList.add('dragging-active');
-  element.setPointerCapture && element.setPointerCapture(e.pointerId);
-  const rect = element.getBoundingClientRect();
-  const offsetX = e.clientX - rect.left;
-  const offsetY = e.clientY - rect.top;
-
-  function move(ev) {
-    if (ev.cancelable) ev.preventDefault();
-    hideSelectionPopover();
-    const truckRect = document.getElementById('truckBed').getBoundingClientRect();
-    let x = ev.clientX - truckRect.left - offsetX;
-    let y = ev.clientY - truckRect.top - offsetY;
-
-    element.style.left = x + 'px';
-    element.style.top = y + 'px';
-
-    if (isPlacementValid(element, x, y, false)) {
-      element.classList.remove('invalid-placement');
-      element.classList.add('valid-placement');
-    } else {
-      element.classList.remove('valid-placement');
-      element.classList.add('invalid-placement');
-    }
-  }
-
-  function up() {
-    const x = parseFloat(element.style.left) || 0;
-    const y = parseFloat(element.style.top) || 0;
-
-    if (!isPlacementValid(element, x, y, false)) {
-      keepItemInsideTruck(element);
-      alert('Invalid placement. Move it away from wheel wells, other items, or truck edges.');
-    }
-
-    element.classList.remove('valid-placement');
-    element.classList.remove('invalid-placement');
-    selectItem(element);
-    showSelectionPopover(element);
-    document.body.classList.remove('dragging-active');
-    document.removeEventListener('pointermove', move);
-    document.removeEventListener('pointerup', up);
-  }
-
-  document.addEventListener('pointermove', move, { passive: false });
-  document.addEventListener('pointerup', up);
-}
-
-function isPlacementValid(item, x, y, checkWheelWells) {
-  const truckBed = document.getElementById('truckBed');
-  const truckWidth = truckBed.clientWidth;
-  const truckHeight = truckBed.clientHeight;
-  const itemWidth = item.offsetWidth;
-  const itemHeight = item.offsetHeight;
-
-  if (x < 0 || y < 0 || x + itemWidth > truckWidth || y + itemHeight > truckHeight) {
-    return false;
-  }
-
-  const itemRect = { left: x, top: y, right: x + itemWidth, bottom: y + itemHeight };
-
-  const existingItems = Array.from(document.querySelectorAll('#truckBed .item-box')).filter(existing => existing !== item);
-  for (const existing of existingItems) {
-    const ex = parseFloat(existing.style.left) || 0;
-    const ey = parseFloat(existing.style.top) || 0;
-    const existingRect = { left: ex, top: ey, right: ex + existing.offsetWidth, bottom: ey + existing.offsetHeight };
-    if (rectsOverlap(itemRect, existingRect)) return false;
-  }
-
-  const wheels = Array.from(document.querySelectorAll('#truckBed .wheel'));
-  for (const wheel of wheels) {
-    const wheelRect = {
-      left: wheel.offsetLeft,
-      top: wheel.offsetTop,
-      right: wheel.offsetLeft + wheel.offsetWidth,
-      bottom: wheel.offsetTop + wheel.offsetHeight
+function createItem(){
+    const item={
+        name:document.getElementById('itemName').value,
+        length:Number(document.getElementById('itemLength').value),
+        width:Number(document.getElementById('itemWidth').value),
+        height:Number(document.getElementById('itemHeight').value),
+        x:80,
+        y:80,
+        rotated:false
     };
-    if (rectsOverlap(itemRect, wheelRect)) return false;
-  }
 
-  return true;
+    addItemBox(item);
 }
 
-function rectsOverlap(a, b) {
-  return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+function addItemBox(data){
+    const item=document.createElement('div');
+    item.className='item-box';
+
+    item.dataset.name=data.name;
+    item.dataset.length=data.length;
+    item.dataset.width=data.width;
+    item.dataset.height=data.height;
+    item.dataset.rotated=data.rotated;
+
+    updateItemSize(item);
+
+    item.style.left=data.x+'px';
+    item.style.top=data.y+'px';
+
+    item.innerHTML=data.name;
+
+    item.addEventListener('pointerdown',(e)=>{
+        selectItem(item);
+        startDrag(e,item);
+    });
+
+    document.getElementById('truckBed').appendChild(item);
 }
-</script></body>
+
+function updateItemSize(item){
+    let length=Number(item.dataset.length);
+    let width=Number(item.dataset.width);
+
+    if(item.dataset.rotated==='true'){
+        [length,width]=[width,length];
+    }
+
+    item.style.width=(length/scale)+'px';
+    item.style.height=(width/scale)+'px';
+}
+
+function selectItem(item){
+    selectedItem=item;
+
+    document.getElementById('selectedInfo').innerHTML=`
+        <strong>${item.dataset.name}</strong><br>
+        ${item.dataset.length}" × ${item.dataset.width}" × ${item.dataset.height}"
+    `;
+}
+
+function rotateSelectedItem(){
+    if(!selectedItem)return;
+
+    selectedItem.dataset.rotated=selectedItem.dataset.rotated==='true'?'false':'true';
+    updateItemSize(selectedItem);
+}
+
+function editSelectedItem(){
+    if(!selectedItem)return;
+
+    const length=prompt('Length',selectedItem.dataset.length);
+    const width=prompt('Width',selectedItem.dataset.width);
+    const height=prompt('Height',selectedItem.dataset.height);
+
+    if(length)selectedItem.dataset.length=length;
+    if(width)selectedItem.dataset.width=width;
+    if(height)selectedItem.dataset.height=height;
+
+    updateItemSize(selectedItem);
+    selectItem(selectedItem);
+}
+
+function deleteSelectedItem(){
+    if(!selectedItem)return;
+
+    selectedItem.remove();
+    selectedItem=null;
+    document.getElementById('selectedInfo').innerHTML='Tap an item to edit it.';
+}
+
+function startDrag(e,item){
+    e.preventDefault();
+
+    const truck=document.getElementById('truckBed');
+    const truckRect=truck.getBoundingClientRect();
+
+    const rect=item.getBoundingClientRect();
+    const offsetX=e.clientX-rect.left;
+    const offsetY=e.clientY-rect.top;
+
+    function move(ev){
+        let x=ev.clientX-truckRect.left-offsetX;
+        let y=ev.clientY-truckRect.top-offsetY;
+
+        item.style.left=x+'px';
+        item.style.top=y+'px';
+
+        if(validPlacement(item,x,y)){
+            item.classList.add('valid-placement');
+            item.classList.remove('invalid-placement');
+        }else{
+            item.classList.add('invalid-placement');
+            item.classList.remove('valid-placement');
+        }
+    }
+
+    function up(){
+        item.classList.remove('valid-placement');
+        item.classList.remove('invalid-placement');
+
+        document.removeEventListener('pointermove',move);
+        document.removeEventListener('pointerup',up);
+    }
+
+    document.addEventListener('pointermove',move);
+    document.addEventListener('pointerup',up);
+}
+
+function validPlacement(item,x,y){
+    const truck=document.getElementById('truckBed');
+
+    if(x<0||y<0)return false;
+    if(x+item.offsetWidth>truck.clientWidth)return false;
+    if(y+item.offsetHeight>truck.clientHeight)return false;
+
+    return true;
+}
+
+function saveProject(){
+    alert('Project save system placeholder.');
+}
+</script>
+
+</body>
 </html>
