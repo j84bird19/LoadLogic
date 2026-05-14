@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>LoadLogic Build Mode</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #020617;
+      --panel: #0f172a;
+      --panel2: #111827;
+      --panel3: #1e293b;
+      --line: #334155;
+      --muted: #94a3b8;
+      --text: #f8fafc;
+      --orange: #f97316;
+      --orange2: #fb923c;
+      --green: #22c55e;
+      --red: #ef4444;
+      --blue: #38bdf8;
+      --gold: #facc15;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #172554 0, var(--bg) 42%, #000 100%);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      touch-action: manipulation;
+    }
+
+    .app-shell {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .topbar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(2, 6, 23, 0.94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+      z-index: 10;
+    }
+
+    .brand-title {
+      font-weight: 900;
+      letter-spacing: .03em;
+      line-height: 1;
+    }
+
+    .brand-subtitle {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      background: rgba(15, 23, 42, 0.92);
+      color: white;
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr;
+      overflow: hidden;
+    }
+
+    .workspace-wrap {
+      min-height: 0;
+      overflow: hidden;
+      padding: 10px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+    }
+
+    .status-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .stat {
+      background: rgba(15, 23, 42, .9);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 8px;
+      min-height: 46px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stat-value {
+      font-size: 15px;
+      font-weight: 900;
+      margin-top: 2px;
+    }
+
+    .bed-stage {
+      position: relative;
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background:
+        linear-gradient(rgba(148, 163, 184, .08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, .08) 1px, transparent 1px),
+        rgba(15, 23, 42, .9);
+      background-size: 24px 24px;
+      overflow: hidden;
+      box-shadow: inset 0 0 45px rgba(0,0,0,.35), 0 16px 32px rgba(0,0,0,.32);
+      touch-action: none;
+    }
+
+    .truck-bed {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(92vw, 430px);
+      aspect-ratio: 1 / 1.55;
+      border: 5px solid #64748b;
+      border-radius: 30px 30px 20px 20px;
+      background: rgba(2, 6, 23, .35);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.04);
+    }
+
+    .cab-label {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #cbd5e1;
+      background: rgba(2,6,23,.7);
+      border: 1px solid var(--line);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .wheel-well {
+      position: absolute;
+      width: 44px;
+      height: 116px;
+      background: rgba(100, 116, 139, .72);
+      border: 2px solid rgba(203,213,225,.42);
+      top: 42%;
+      transform: translateY(-50%);
+    }
+
+    .wheel-left { left: -5px; border-radius: 0 18px 18px 0; }
+    .wheel-right { right: -5px; border-radius: 18px 0 0 18px; }
+
+    .build-part {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--orange2);
+      background: rgba(249, 115, 22, .24);
+      color: white;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+      padding: 4px;
+      user-select: none;
+      cursor: grab;
+      box-shadow: 0 10px 20px rgba(0,0,0,.26);
+      touch-action: none;
+    }
+
+    .build-part.selected {
+      outline: 3px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .build-part.bad {
+      border-color: var(--red);
+      background: rgba(239,68,68,.3);
+    }
+
+    .dimension-tag {
+      position: absolute;
+      left: 50%;
+      bottom: -22px;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 10px;
+      color: #e2e8f0;
+      background: rgba(2,6,23,.82);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 7px;
+      pointer-events: none;
+    }
+
+    .bottom-panel {
+      min-height: 210px;
+      max-height: 42vh;
+      overflow-y: auto;
+      padding: 10px;
+      border-top: 1px solid var(--line);
+      background: rgba(2,6,23,.95);
+      box-shadow: 0 -14px 30px rgba(0,0,0,.36);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .tab {
+      border: 1px solid var(--line);
+      color: #cbd5e1;
+      background: rgba(15,23,42,.95);
+      border-radius: 12px;
+      padding: 9px 6px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--orange), #b45309);
+      color: white;
+      border-color: rgba(251,146,60,.8);
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 8px;
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--panel2);
+      color: white;
+      border-radius: 12px;
+      padding: 10px;
+      outline: none;
+    }
+
+    textarea { resize: vertical; min-height: 70px; }
+
+    .dim-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--panel3);
+      color: white;
+      border-radius: 14px;
+      padding: 11px 10px;
+      font-weight: 900;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--orange), #b45309);
+      border-color: rgba(251,146,60,.9);
+    }
+
+    .btn.danger {
+      background: rgba(239,68,68,.18);
+      border-color: rgba(239,68,68,.5);
+    }
+
+    .btn.good {
+      background: rgba(34,197,94,.18);
+      border-color: rgba(34,197,94,.5);
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .list-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      background: rgba(15,23,42,.88);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 9px;
+    }
+
+    .list-title { font-weight: 900; font-size: 13px; }
+    .list-sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    .tiny-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(30,41,59,.9);
+      color: white;
+      padding: 7px 9px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .footer-actions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 6px;
+      padding: 8px 10px;
+      background: rgba(2,6,23,.97);
+      border-top: 1px solid var(--line);
+      z-index: 10;
+    }
+
+    .foot-btn {
+      border: 1px solid var(--line);
+      background: rgba(15,23,42,.92);
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 9px 4px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 86px;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      background: rgba(15,23,42,.96);
+      border: 1px solid var(--line);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      transition: .22s ease;
+      z-index: 50;
+      pointer-events: none;
+      box-shadow: 0 12px 30px rgba(0,0,0,.38);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (min-width: 760px) {
+      .main {
+        grid-template-columns: 1fr 360px;
+      }
+      .bottom-panel {
+        max-height: none;
+        height: auto;
+        border-top: 0;
+        border-left: 1px solid var(--line);
+      }
+      .truck-bed {
+        width: min(48vw, 470px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="brand-title">LOADLOGIC</div>
+        <div class="brand-subtitle">Build Mode · truck-bed build planner</div>
+      </div>
+      <button class="pill" id="projectNameBtn">Untitled Build</button>
+    </header>
+
+    <main class="main">
+      <section class="workspace-wrap">
+        <div class="status-strip">
+          <div class="stat">
+            <div class="stat-label">Bed Size</div>
+            <div class="stat-value" id="bedSizeStat">5' 6" × 4' 8"</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Parts</div>
+            <div class="stat-value" id="partsStat">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Fit Status</div>
+            <div class="stat-value" id="fitStat">Ready</div>
+          </div>
+        </div>
+
+        <div class="bed-stage" id="stage">
+          <div class="truck-bed" id="truckBed">
+            <div class="cab-label">CAB SIDE</div>
+            <div class="wheel-well wheel-left"></div>
+            <div class="wheel-well wheel-right"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="bottom-panel">
+        <nav class="tabs">
+          <button class="tab active" data-tab="part">PART</button>
+          <button class="tab" data-tab="bed">BED</button>
+          <button class="tab" data-tab="list">SAVED</button>
+          <button class="tab" data-tab="notes">NOTES</button>
+        </nav>
+
+        <section class="panel active" id="panel-part">
+          <div class="form-grid">
+            <div class="field full">
+              <label>Build part name</label>
+              <input id="partName" value="Rack Panel" />
+            </div>
+            <div class="field">
+              <label>Type</label>
+              <select id="partType">
+                <option>Rack</option>
+                <option>Drawer</option>
+                <option>Divider</option>
+                <option>Platform</option>
+                <option>Side Rail</option>
+                <option>Tool Box</option>
+                <option>Custom</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Material</label>
+              <select id="partMaterial">
+                <option>Plywood</option>
+                <option>2x4 Lumber</option>
+                <option>Steel</option>
+                <option>Aluminum</option>
+                <option>Acrylic</option>
+                <option>Custom</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label>Width</label>
+              <div class="dim-row">
+                <input id="partWft" type="number" min="0" value="2" placeholder="Feet" />
+                <input id="partWin" type="number" min="0" value="0" placeholder="Inches" />
+              </div>
+            </div>
+            <div class="field full">
+              <label>Depth / Length</label>
+              <div class="dim-row">
+                <input id="partDft" type="number" min="0" value="1" placeholder="Feet" />
+                <input id="partDin" type="number" min="0" value="6" placeholder="Inches" />
+              </div>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" id="addPartBtn">+ Add Build Part</button>
+            <button class="btn" id="rotateBtn">Rotate Selected</button>
+            <button class="btn danger" id="deleteBtn">Delete Selected</button>
+            <button class="btn good" id="duplicateBtn">Duplicate</button>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-bed">
+          <div class="form-grid">
+            <div class="field full">
+              <label>Truck / project label</label>
+              <input id="projectNameInput" value="Untitled Build" />
+            </div>
+            <div class="field full">
+              <label>Bed Width</label>
+              <div class="dim-row">
+                <input id="bedWft" type="number" min="0" value="4" />
+                <input id="bedWin" type="number" min="0" value="8" />
+              </div>
+            </div>
+            <div class="field full">
+              <label>Bed Length</label>
+              <div class="dim-row">
+                <input id="bedLft" type="number" min="0" value="5" />
+                <input id="bedLin" type="number" min="0" value="6" />
+              </div>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" id="applyBedBtn">Apply Bed Size</button>
+            <button class="btn danger" id="clearBtn">Clear Build</button>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-list">
+          <div class="mini-list" id="partsList"></div>
+        </section>
+
+        <section class="panel" id="panel-notes">
+          <div class="field">
+            <label>Build notes</label>
+            <textarea id="notes" placeholder="Cut list, material notes, hardware, client notes..."></textarea>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" id="saveNotesBtn">Save Notes</button>
+            <button class="btn" id="copySummaryBtn">Copy Summary</button>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="footer-actions">
+      <button class="foot-btn" id="saveBtn">Save</button>
+      <button class="foot-btn" id="loadBtn">Load</button>
+      <button class="foot-btn" id="exportBtn">Export</button>
+      <button class="foot-btn" id="resetViewBtn">Center</button>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast">Saved</div>
+
+  <script>
+    const KEY = 'loadlogic_build_mode_v1';
+
+    const state = {
+      projectName: 'Untitled Build',
+      bedWidthIn: 56,
+      bedLengthIn: 66,
+      parts: [],
+      selectedId: null,
+      notes: ''
+    };
+
+    const $ = id => document.getElementById(id);
+    const truckBed = $('truckBed');
+    const toast = $('toast');
+
+    function toInches(ftId, inId) {
+      const ft = Math.max(0, parseFloat($(ftId).value || 0));
+      const inch = Math.max(0, parseFloat($(inId).value || 0));
+      return Math.round((ft * 12 + inch) * 100) / 100;
+    }
+
+    function formatInches(total) {
+      total = Math.round(total);
+      const ft = Math.floor(total / 12);
+      const inch = total % 12;
+      return `${ft}' ${inch}"`;
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1200);
+    }
+
+    function getScale() {
+      const rect = truckBed.getBoundingClientRect();
+      return {
+        x: rect.width / state.bedWidthIn,
+        y: rect.height / state.bedLengthIn,
+        rect
+      };
+    }
+
+    function isPartBad(part) {
+      if (part.x < 0 || part.y < 0) return true;
+      if (part.x + part.w > state.bedWidthIn) return true;
+      if (part.y + part.d > state.bedLengthIn) return true;
+
+      // Rough wheel-well collision zones. This is intentionally simple for v1.
+      const wheelTop = state.bedLengthIn * 0.32;
+      const wheelBottom = state.bedLengthIn * 0.58;
+      const wheelDepth = 7;
+      const hitsVertical = part.y < wheelBottom && part.y + part.d > wheelTop;
+      const hitsLeft = part.x < wheelDepth;
+      const hitsRight = part.x + part.w > state.bedWidthIn - wheelDepth;
+      return hitsVertical && (hitsLeft || hitsRight);
+    }
+
+    function render() {
+      truckBed.querySelectorAll('.build-part').forEach(el => el.remove());
+      const { x: sx, y: sy } = getScale();
+      let badCount = 0;
+
+      state.parts.forEach(part => {
+        const el = document.createElement('div');
+        el.className = 'build-part';
+        el.dataset.id = part.id;
+        el.style.left = `${part.x * sx}px`;
+        el.style.top = `${part.y * sy}px`;
+        el.style.width = `${Math.max(22, part.w * sx)}px`;
+        el.style.height = `${Math.max(22, part.d * sy)}px`;
+        el.innerHTML = `<span>${part.name}</span><div class="dimension-tag">${formatInches(part.w)} × ${formatInches(part.d)}</div>`;
+        if (part.id === state.selectedId) el.classList.add('selected');
+        if (isPartBad(part)) { el.classList.add('bad'); badCount++; }
+        truckBed.appendChild(el);
+      });
+
+      $('bedSizeStat').textContent = `${formatInches(state.bedLengthIn)} × ${formatInches(state.bedWidthIn)}`;
+      $('partsStat').textContent = state.parts.length;
+      $('fitStat').textContent = badCount ? `${badCount} Issue${badCount > 1 ? 's' : ''}` : 'Good';
+      $('projectNameBtn').textContent = state.projectName || 'Untitled Build';
+      $('projectNameInput').value = state.projectName;
+      $('notes').value = state.notes || '';
+      renderList();
+    }
+
+    function renderList() {
+      const box = $('partsList');
+      box.innerHTML = '';
+      if (!state.parts.length) {
+        box.innerHTML = '<div class="list-sub">No build parts yet. Add racks, drawers, dividers, platforms, or rails from the PART tab.</div>';
+        return;
+      }
+
+      state.parts.forEach(part => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+          <div>
+            <div class="list-title">${part.name}</div>
+            <div class="list-sub">${part.type} · ${part.material} · ${formatInches(part.w)} × ${formatInches(part.d)}</div>
+          </div>
+          <button class="tiny-btn" data-select="${part.id}">Select</button>
+        `;
+        box.appendChild(item);
+      });
+    }
+
+    function addPart() {
+      const w = toInches('partWft', 'partWin');
+      const d = toInches('partDft', 'partDin');
+      if (!w || !d) return showToast('Add dimensions first');
+
+      const part = {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        name: $('partName').value.trim() || 'Build Part',
+        type: $('partType').value,
+        material: $('partMaterial').value,
+        w,
+        d,
+        x: Math.max(1, Math.round((state.bedWidthIn - w) / 2)),
+        y: Math.max(5, Math.round((state.bedLengthIn - d) / 2))
+      };
+      state.parts.push(part);
+      state.selectedId = part.id;
+      save(false);
+      render();
+      showToast('Build part added');
+    }
+
+    function selectedPart() {
+      return state.parts.find(p => p.id === state.selectedId);
+    }
+
+    function rotateSelected() {
+      const p = selectedPart();
+      if (!p) return showToast('Select a part first');
+      [p.w, p.d] = [p.d, p.w];
+      save(false); render(); showToast('Rotated');
+    }
+
+    function deleteSelected() {
+      if (!state.selectedId) return showToast('Select a part first');
+      state.parts = state.parts.filter(p => p.id !== state.selectedId);
+      state.selectedId = null;
+      save(false); render(); showToast('Deleted');
+    }
+
+    function duplicateSelected() {
+      const p = selectedPart();
+      if (!p) return showToast('Select a part first');
+      const copy = { ...p, id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), name: `${p.name} Copy`, x: p.x + 3, y: p.y + 3 };
+      state.parts.push(copy);
+      state.selectedId = copy.id;
+      save(false); render(); showToast('Duplicated');
+    }
+
+    function applyBedSize() {
+      const w = toInches('bedWft', 'bedWin');
+      const l = toInches('bedLft', 'bedLin');
+      if (!w || !l) return showToast('Bed dimensions needed');
+      state.bedWidthIn = w;
+      state.bedLengthIn = l;
+      state.projectName = $('projectNameInput').value.trim() || 'Untitled Build';
+      save(false); render(); showToast('Bed updated');
+    }
+
+    function save(show = true) {
+      state.notes = $('notes') ? $('notes').value : state.notes;
+      localStorage.setItem(KEY, JSON.stringify(state));
+      if (show) showToast('Saved');
+    }
+
+    function load() {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return showToast('No saved build yet');
+      Object.assign(state, JSON.parse(raw));
+      render();
+      showToast('Loaded');
+    }
+
+    function clearBuild() {
+      if (!confirm('Clear all build parts?')) return;
+      state.parts = [];
+      state.selectedId = null;
+      save(false); render(); showToast('Build cleared');
+    }
+
+    function exportBuild() {
+      const summary = buildSummary();
+      const blob = new Blob([summary], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${state.projectName.replace(/[^a-z0-9]+/gi, '_').toLowerCase()}_summary.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Exported');
+    }
+
+    function buildSummary() {
+      const lines = [];
+      lines.push(`LoadLogic Build Mode`);
+      lines.push(`Project: ${state.projectName}`);
+      lines.push(`Bed: ${formatInches(state.bedLengthIn)} long × ${formatInches(state.bedWidthIn)} wide`);
+      lines.push('');
+      lines.push('Build Parts:');
+      if (!state.parts.length) lines.push('- None');
+      state.parts.forEach((p, i) => {
+        lines.push(`${i + 1}. ${p.name} | ${p.type} | ${p.material} | ${formatInches(p.w)} × ${formatInches(p.d)} | position ${formatInches(p.x)} from left, ${formatInches(p.y)} from cab`);
+      });
+      lines.push('');
+      lines.push('Notes:');
+      lines.push(state.notes || 'None');
+      return lines.join('\n');
+    }
+
+    async function copySummary() {
+      const summary = buildSummary();
+      try {
+        await navigator.clipboard.writeText(summary);
+        showToast('Summary copied');
+      } catch {
+        showToast('Copy unavailable');
+      }
+    }
+
+    function setTab(name) {
+      document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      $(`panel-${name}`).classList.add('active');
+    }
+
+    let drag = null;
+
+    truckBed.addEventListener('pointerdown', e => {
+      const target = e.target.closest('.build-part');
+      if (!target) return;
+      e.preventDefault();
+      const part = state.parts.find(p => p.id === target.dataset.id);
+      if (!part) return;
+      state.selectedId = part.id;
+      const { x: sx, y: sy, rect } = getScale();
+      drag = {
+        id: part.id,
+        offsetX: (e.clientX - rect.left) / sx - part.x,
+        offsetY: (e.clientY - rect.top) / sy - part.y
+      };
+      target.setPointerCapture(e.pointerId);
+      render();
+    });
+
+    truckBed.addEventListener('pointermove', e => {
+      if (!drag) return;
+      e.preventDefault();
+      const part = state.parts.find(p => p.id === drag.id);
+      if (!part) return;
+      const { x: sx, y: sy, rect } = getScale();
+      part.x = Math.round(((e.clientX - rect.left) / sx - drag.offsetX) * 10) / 10;
+      part.y = Math.round(((e.clientY - rect.top) / sy - drag.offsetY) * 10) / 10;
+      render();
+    });
+
+    truckBed.addEventListener('pointerup', () => {
+      if (!drag) return;
+      drag = null;
+      save(false);
+    });
+
+    truckBed.addEventListener('pointercancel', () => { drag = null; });
+
+    document.addEventListener('click', e => {
+      const tab = e.target.closest('.tab');
+      if (tab) setTab(tab.dataset.tab);
+
+      const select = e.target.closest('[data-select]');
+      if (select) {
+        state.selectedId = select.dataset.select;
+        render();
+        setTab('part');
+      }
+    });
+
+    $('addPartBtn').addEventListener('click', addPart);
+    $('rotateBtn').addEventListener('click', rotateSelected);
+    $('deleteBtn').addEventListener('click', deleteSelected);
+    $('duplicateBtn').addEventListener('click', duplicateSelected);
+    $('applyBedBtn').addEventListener('click', applyBedSize);
+    $('clearBtn').addEventListener('click', clearBuild);
+    $('saveBtn').addEventListener('click', () => save(true));
+    $('loadBtn').addEventListener('click', load);
+    $('exportBtn').addEventListener('click', exportBuild);
+    $('resetViewBtn').addEventListener('click', () => showToast('View centered'));
+    $('saveNotesBtn').addEventListener('click', () => save(true));
+    $('copySummaryBtn').addEventListener('click', copySummary);
+    $('projectNameBtn').addEventListener('click', () => setTab('bed'));
+
+    window.addEventListener('resize', render);
+    window.addEventListener('beforeunload', () => save(false));
+
+    load();
+    render();
+  </script>
+</body>
+</html>
