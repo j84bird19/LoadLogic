@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>LoadLogic Build Mode v3</title>
+
+<style>
+:root{
+--bg:#020617;
+--panel:#081120;
+--panel2:#0f172a;
+--line:#22324d;
+--text:#f8fafc;
+--muted:#94a3b8;
+--orange:#f97316;
+--green:#22c55e;
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+html,body{
+margin:0;
+height:100%;
+overflow:hidden;
+background:
+radial-gradient(circle at top,#13213a 0%,#081120 40%,#020617 100%);
+font-family:Arial,Helvetica,sans-serif;
+color:var(--text);
+}
+
+button{
+border:none;
+background:#0b1324;
+color:white;
+border-radius:16px;
+}
+
+.app{
+height:100dvh;
+display:grid;
+grid-template-rows:64px 1fr 82px;
+}
+
+.topbar{
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:10px 14px;
+border-bottom:1px solid var(--line);
+background:rgba(2,6,23,.94);
+backdrop-filter:blur(12px);
+z-index:20;
+}
+
+.brand{
+display:flex;
+flex-direction:column;
+}
+
+.logo{
+font-size:28px;
+font-weight:900;
+color:var(--orange);
+line-height:1;
+}
+
+.sub{
+font-size:11px;
+color:var(--muted);
+margin-top:3px;
+}
+
+.top-actions{
+display:flex;
+gap:8px;
+}
+
+.top-actions button{
+height:42px;
+padding:0 16px;
+border:1px solid #23314f;
+}
+
+.workspace{
+position:relative;
+overflow:hidden;
+}
+
+.canvas-wrap{
+position:absolute;
+inset:0;
+display:flex;
+justify-content:center;
+align-items:center;
+padding:12px;
+}
+
+.grid-bg{
+position:absolute;
+inset:0;
+background:
+radial-gradient(circle,rgba(148,163,184,.14) 1px,transparent 1px) 0 0/22px 22px;
+opacity:.65;
+}
+
+.truckbed{
+position:relative;
+width:min(95vw,700px);
+height:min(84vh,980px);
+background:linear-gradient(180deg,#1e2a3d,#172334);
+border:4px solid #50607b;
+border-radius:34px;
+box-shadow:
+0 25px 60px rgba(0,0,0,.5),
+inset 0 0 0 1px rgba(255,255,255,.08);
+overflow:hidden;
+}
+
+.grid{
+position:absolute;
+inset:0;
+background:
+linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);
+background-size:44px 44px;
+opacity:.45;
+}
+
+.cab{
+position:absolute;
+top:10px;
+width:100%;
+text-align:center;
+font-size:12px;
+letter-spacing:.1em;
+color:#d5deeb88;
+font-weight:700;
+}
+
+.tailgate{
+position:absolute;
+bottom:10px;
+width:100%;
+text-align:center;
+font-size:12px;
+letter-spacing:.1em;
+color:#d5deeb88;
+font-weight:700;
+}
+
+.wheel{
+position:absolute;
+width:64px;
+height:250px;
+background:#020617;
+border:3px solid #5a6983;
+top:26%;
+border-radius:16px;
+}
+
+.left-wheel{left:-2px;}
+.right-wheel{right:-2px;}
+
+.build-piece{
+position:absolute;
+left:50%;
+top:65%;
+transform:translate(-50%,-50%);
+width:220px;
+height:110px;
+border:3px solid var(--orange);
+background:rgba(249,115,22,.18);
+border-radius:14px;
+display:flex;
+justify-content:center;
+align-items:center;
+font-weight:800;
+font-size:22px;
+box-shadow:0 0 30px rgba(249,115,22,.2);
+touch-action:none;
+}
+
+.handle{
+position:absolute;
+width:18px;
+height:18px;
+background:var(--orange);
+border-radius:50%;
+border:3px solid white;
+}
+
+.h1{top:-9px;left:-9px;}
+.h2{top:-9px;right:-9px;}
+.h3{bottom:-9px;left:-9px;}
+.h4{bottom:-9px;right:-9px;}
+
+.side-tools{
+position:absolute;
+left:10px;
+top:50%;
+transform:translateY(-50%);
+display:flex;
+flex-direction:column;
+gap:10px;
+z-index:30;
+}
+
+.side-tools button,
+.right-tools button{
+width:72px;
+height:72px;
+border:1px solid #2a3b5a;
+font-size:12px;
+}
+
+.right-tools{
+position:absolute;
+right:10px;
+top:50%;
+transform:translateY(-50%);
+display:flex;
+flex-direction:column;
+gap:10px;
+z-index:30;
+}
+
+.bottom-bar{
+display:grid;
+grid-template-columns:repeat(5,1fr);
+gap:10px;
+padding:10px;
+border-top:1px solid var(--line);
+background:rgba(2,6,23,.96);
+backdrop-filter:blur(12px);
+}
+
+.bottom-bar button{
+font-size:15px;
+font-weight:700;
+border:1px solid #263653;
+}
+
+.save-btn{
+background:linear-gradient(135deg,#16a34a,var(--green));
+}
+
+.toast{
+position:absolute;
+bottom:96px;
+left:50%;
+transform:translateX(-50%);
+background:#020617;
+border:1px solid #2b3a56;
+padding:12px 18px;
+border-radius:999px;
+display:none;
+z-index:100;
+}
+
+.show{display:block;}
+
+@media(max-width:700px){
+
+.truckbed{
+width:96vw;
+height:74vh;
+}
+
+.side-tools button,
+.right-tools button{
+width:58px;
+height:58px;
+font-size:10px;
+}
+
+.build-piece{
+width:160px;
+height:80px;
+font-size:16px;
+}
+
+.wheel{
+height:180px;
+width:52px;
+}
+
+.logo{font-size:22px;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="topbar">
+<div class="brand">
+<div class="logo">LoadLogic</div>
+<div class="sub">Build Mode • Workspace Engine v3</div>
+</div>
+
+<div class="top-actions">
+<button>New</button>
+<button>Save</button>
+</div>
+</header>
+
+<main class="workspace">
+
+<div class="grid-bg"></div>
+
+<div class="side-tools">
+<button>Draw</button>
+<button>Rack</button>
+<button>Shelf</button>
+<button>Divider</button>
+<button>Custom</button>
+</div>
+
+<div class="right-tools">
+<button>Grid</button>
+<button>Snap</button>
+<button>Undo</button>
+<button>Lock</button>
+</div>
+
+<div class="canvas-wrap">
+
+<div class="truckbed">
+
+<div class="grid"></div>
+
+<div class="cab">FRONT (CAB SIDE)</div>
+<div class="tailgate">TAILGATE</div>
+
+<div class="wheel left-wheel"></div>
+<div class="wheel right-wheel"></div>
+
+<div class="build-piece" id="piece">
+Drawer
+<div class="handle h1"></div>
+<div class="handle h2"></div>
+<div class="handle h3"></div>
+<div class="handle h4"></div>
+</div>
+
+</div>
+</div>
+
+<div class="toast" id="toast">Project Saved</div>
+
+</main>
+
+<footer class="bottom-bar">
+<button>Pieces</button>
+<button>Size</button>
+<button id="rotateBtn">Rotate</button>
+<button>Layers</button>
+<button class="save-btn" id="saveBtn">Save</button>
+</footer>
+
+</div>
+
+<script>
+
+const piece = document.getElementById('piece');
+const toast = document.getElementById('toast');
+
+let rotation = 0;
+let dragging = false;
+
+let startX = 0;
+let startY = 0;
+let startLeft = 50;
+let startTop = 65;
+
+piece.addEventListener('pointerdown', e=>{
+dragging = true;
+
+piece.setPointerCapture(e.pointerId);
+
+startX = e.clientX;
+startY = e.clientY;
+
+startLeft = parseFloat(piece.style.left || 50);
+startTop = parseFloat(piece.style.top || 65);
+});
+
+piece.addEventListener('pointermove', e=>{
+
+if(!dragging) return;
+
+const bed = document.querySelector('.truckbed').getBoundingClientRect();
+
+const dx = ((e.clientX - startX)/bed.width)*100;
+const dy = ((e.clientY - startY)/bed.height)*100;
+
+piece.style.left = Math.min(92,Math.max(8,startLeft+dx))+'%';
+piece.style.top = Math.min(92,Math.max(8,startTop+dy))+'%';
+
+});
+
+piece.addEventListener('pointerup', ()=> dragging=false);
+piece.addEventListener('pointercancel', ()=> dragging=false);
+
+document.getElementById('rotateBtn').onclick = ()=>{
+rotation += 90;
+piece.style.transform = `translate(-50%,-50%) rotate(${rotation}deg)`;
+}
+
+document.getElementById('saveBtn').onclick = ()=>{
+
+toast.classList.add('show');
+
+setTimeout(()=>{
+toast.classList.remove('show');
+},1500);
+
+}
+
+</script>
+
+</body>
+</html>
